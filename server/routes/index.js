@@ -1,9 +1,9 @@
 const express = require('express')
 
-const testRouter = require('./test')
+const sessionRouter = require('./session')
 
 const router = express.Router()
 
-router.use('/test', testRouter)
+router.use('/session', sessionRouter)
 
 module.exports = router
