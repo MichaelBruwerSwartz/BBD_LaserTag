@@ -15,6 +15,7 @@ const wss = new WebSocket.Server({ server });
 */
 
 function sendToClients(session, message, players, spectators) {
+<<<<<<< HEAD
   console.log("send to clients");
   if (players)
     for (let username in session.players) {
@@ -26,6 +27,16 @@ function sendToClients(session, message, players, spectators) {
     for (let id in session.spectators) {
       console.log("sending to spectator", id);
       session.spectators[id].send(message);
+=======
+    if (players) for (let username in session.players) {
+        const player = session.players[username]
+        player.connection.send(message)
+    }
+    if (spectators) {
+        for (let id in session.spectators) {
+            session.spectators[id].send(message)
+        }
+>>>>>>> 76b739bf2d94a33cb5ee06f35b9f144840429d1a
     }
   }
 }
@@ -66,15 +77,22 @@ wss.on("connection", (ws, req) => {
   } else {
     const { username } = query;
 
+<<<<<<< HEAD
     if (!username || username.trim() === "") {
       ws.close(1000, "Username is required");
       return;
     }
+=======
+    if (isSpectator) {
+        // spectators do not have usernames
+        const id = randomUUID()
+>>>>>>> 76b739bf2d94a33cb5ee06f35b9f144840429d1a
 
     console.info(
       `Client connected to session ${sessionId}, username: ${username}`
     );
 
+<<<<<<< HEAD
     if (session == null) {
       // create a new session if it doesn't exist
       session = appData.createSession(sessionId, username);
@@ -87,6 +105,90 @@ wss.on("connection", (ws, req) => {
         const randomSuffix = Math.floor(Math.random() * 10);
         username += randomSuffix;
       }
+=======
+        // add spectator to session
+        session.spectators[id] = ws
+    } else {
+        const { username } = query
+
+        if (!username || username.trim() === '') {
+            ws.close(1000, 'Username is required')
+            return
+        }
+
+        console.info(`Client connected to session ${sessionId}, username: ${username}`)
+
+        if (session == null) {
+            // create a new session if it doesn't exist
+            session = appData.createSession(sessionId, username)
+            console.info(`Created new session with ID ${sessionId} for admin user ${username}`)
+        } else {
+            // Generate a new username if it already exists in the session
+            while (Object.keys(session.players).includes(username)) {
+                const randomSuffix = Math.floor(Math.random() * 10)
+                username += randomSuffix
+            }
+        }
+
+        // add player to session
+        session.players[username] = {
+            connection: ws
+        }
+
+        // send player joined message
+        sendToClients(session, JSON.stringify({
+            type: 'playerJoin',
+            username
+        }), true, true)
+        sendToClients(session, JSON.stringify({
+            type: 'playerListUpdate',
+            playerList: getPlayerList(session)
+        }), true, true)
+
+        ws.on('message', message => {
+            try {
+                message = JSON.parse(message)
+            } catch (error) {
+                console.error(`Error processing message from client ${username}:`, error)
+                return
+            }
+
+            console.info(`Received message from client ${username}:`, message)
+        })
+
+        ws.on('close', () => {
+            // check if should close session
+            if (Object.keys(session.players).length === 1) {
+                delete appData.sessions[sessionId]
+                console.info(`Session ${sessionId} closed`)
+                return
+            }
+
+            // remove player from session
+            delete session.players[username]
+
+            // send player quit message
+            sendToClients(session, JSON.stringify({
+                type: 'playerQuit',
+                username
+            }), true, true)
+            sendToClients(session, JSON.stringify({
+                type: 'playerListUpdate',
+                playerList: getPlayerList(session)
+            }), true, true)
+
+            // check if admin left
+            if (session.admin === username) {
+                let newAdminUsername = Object.keys(session.players)[0] // pick new admin
+                session.admin = newAdminUsername
+
+                sendToClients(session, JSON.stringify({
+                    type: 'adminChange',
+                    username: newAdminUsername
+                }), true, true)
+            }
+        })
+>>>>>>> 76b739bf2d94a33cb5ee06f35b9f144840429d1a
     }
 
     // add player to session
@@ -179,9 +281,15 @@ wss.on("connection", (ws, req) => {
 });
 
 function startWebocket() {
+<<<<<<< HEAD
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`WebSocket server running on ws://localhost:${PORT}`);
   });
+=======
+    server.listen(PORT, () => {
+        console.info(`WebSocket server running on ws://localhost:${PORT}`)
+    })
+>>>>>>> 76b739bf2d94a33cb5ee06f35b9f144840429d1a
 }
 
 module.exports = startWebocket;

@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev-i": "nodemon server/index.js",
-    "dev-w": "nodemon server/websocket.js"
+    "dev": "nodemon server/index.js"
   },
   "repository": {
     "type": "git",

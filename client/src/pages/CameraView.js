@@ -8,6 +8,48 @@ export default function CameraView() {
   const [gunType, setGunType] = useState("pistol");
   const [zoomEnabled, setZoomEnabled] = useState(false);
 
+  // Helper function to get color name from RGB values
+  function getColorName(r, g, b) {
+    // Convert RGB to HSV for easier color classification
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    
+    let h = 0;
+    if (delta === 0) {
+      h = 0;
+    } else if (max === r) {
+      h = ((g - b) / delta) % 6;
+    } else if (max === g) {
+      h = (b - r) / delta + 2;
+    } else {
+      h = (r - g) / delta + 4;
+    }
+    
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+    
+    const s = max === 0 ? 0 : delta / max;
+    const v = max;
+    
+    // Classify based on HSV values
+    if (v < 0.2) return "black";
+    if (s < 0.1 && v > 0.8) return "white";
+    if (s < 0.2) return "gray";
+    
+    if (h < 15 || h > 345) return "red";
+    if (h >= 15 && h < 45) return "orange";
+    if (h >= 45 && h < 75) return "yellow";
+    if (h >= 75 && h < 165) return "green";
+    if (h >= 165 && h < 255) return "blue";
+    if (h >= 255 && h < 315) return "purple";
+    return "pink";
+  }
+
   function processVideoOnce(video, canvas) {
     const width = video.videoWidth;
     const height = video.videoHeight;
@@ -23,73 +65,136 @@ export default function CameraView() {
 
     const src = cv.matFromImageData(imageData);
     const gray = new cv.Mat();
-    const edges = new cv.Mat();
+    const processed = new cv.Mat();
     const contours = new cv.MatVector();
     const hierarchy = new cv.Mat();
 
+    // Convert to grayscale and apply preprocessing
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-    cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
-    cv.Canny(gray, edges, 50, 150);
+    cv.GaussianBlur(gray, processed, new cv.Size(7, 7), 1.5);
+    
+    // Use adaptive thresholding for better binarization
+    cv.adaptiveThreshold(
+      processed,
+      processed,
+      255,
+      cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+      cv.THRESH_BINARY_INV,
+      11,
+      2
+    );
+    
+    // Morphological operations to clean up noise
+    const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3, 3));
+    cv.morphologyEx(processed, processed, cv.MORPH_CLOSE, kernel);
+    
+    // Find contours
     cv.findContours(
-      edges,
+      processed,
       contours,
       hierarchy,
-      cv.RETR_EXTERNAL,
+      cv.RETR_TREE,
       cv.CHAIN_APPROX_SIMPLE
     );
 
+    // Process contours
     for (let i = 0; i < contours.size(); ++i) {
       const cnt = contours.get(i);
       const area = cv.contourArea(cnt);
+      const perimeter = cv.arcLength(cnt, true);
 
-      if (area > 100) {
-        const approx = new cv.Mat();
-        const peri = cv.arcLength(cnt, true);
-        cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-
-        const vertices = approx.rows;
-        let shape = "";
-        if (vertices === 3) shape = "Triangle";
-        else if (vertices === 4) shape = "Rectangle";
-        else if (vertices === 5) shape = "Pentagon";
-        else if (vertices === 6) shape = "Hexagon";
-        else if (vertices > 6) {
-          const perimeter = cv.arcLength(cnt, true);
-          const circularity = (4 * Math.PI * area) / (perimeter * perimeter);
-          if (circularity > 0.7) shape = "Circle";
-        }
-
-        if (shape) {
-          ctx.strokeStyle = "lime";
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          const data = cnt.data32S;
-          for (let j = 0; j < cnt.rows; j++) {
-            const x = data[j * 2];
-            const y = data[j * 2 + 1];
-            if (j === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.closePath();
-          ctx.stroke();
-
-          const moments = cv.moments(cnt);
-          if (moments.m00 !== 0) {
-            const cx = Math.round(moments.m10 / moments.m00);
-            const cy = Math.round(moments.m01 / moments.m00);
-            ctx.fillStyle = "red";
-            ctx.font = "18px sans-serif";
-            ctx.fillText(shape, cx - 30, cy);
-          }
-        }
-
-        approx.delete();
+      // Filter small contours and noise
+      if (area < 100 || perimeter < 30) {
+        cnt.delete();
+        continue;
       }
+
+      const approx = new cv.Mat();
+      // Use more precise approximation for triangles
+      cv.approxPolyDP(cnt, approx, 0.015 * perimeter, true);
+      const vertices = approx.rows;
+      
+      // Calculate solidity to distinguish irregular shapes
+      const hull = new cv.Mat();
+      cv.convexHull(cnt, hull);
+      const hullArea = cv.contourArea(hull);
+      const solidity = hullArea > 0 ? area / hullArea : 0;
+      
+      let shape = "";
+      if (vertices === 3) {
+        // Triangle detection with additional validation
+        const triangleAspectRatio = Math.max(
+          cv.boundingRect(approx).width,
+          cv.boundingRect(approx).height
+        ) / Math.min(
+          cv.boundingRect(approx).width,
+          cv.boundingRect(approx).height
+        );
+        
+        if (solidity > 0.85 && triangleAspectRatio < 2.5) {
+          shape = "Triangle";
+        }
+      } else if (vertices === 4) {
+        // Check for rectangles vs squares
+        const rect = cv.minAreaRect(cnt);
+        const aspectRatio = Math.max(rect.size.width, rect.size.height) / 
+                           Math.min(rect.size.width, rect.size.height);
+        shape = aspectRatio > 1.2 ? "Rectangle" : "Square";
+      }
+
+      if (shape) {
+        // Create mask for the current contour
+        const mask = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
+        cv.drawContours(mask, contours, i, new cv.Scalar(255), -1);
+        
+        // Calculate mean color within the contour
+        const meanColor = cv.mean(src, mask);
+        mask.delete();
+        
+        // Extract RGB components
+        const r = Math.round(meanColor[0]);
+        const g = Math.round(meanColor[1]);
+        const b = Math.round(meanColor[2]);
+        
+        // Get color name
+        const colorName = getColorName(r, g, b);
+        
+        // Draw contour
+        ctx.strokeStyle = "lime";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        const data = cnt.data32S;
+        for (let j = 0; j < cnt.rows; j++) {
+          const x = data[j * 2];
+          const y = data[j * 2 + 1];
+          if (j === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Draw label
+        const moments = cv.moments(cnt);
+        if (moments.m00 !== 0) {
+          const cx = Math.round(moments.m10 / moments.m00);
+          const cy = Math.round(moments.m01 / moments.m00);
+          ctx.fillStyle = "red";
+          ctx.font = "bold 18px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`${colorName} ${shape}`, cx, cy - 15);
+        }
+      }
+
+      approx.delete();
+      hull.delete();
+      cnt.delete();
     }
 
+    // Clean up memory
     src.delete();
     gray.delete();
-    edges.delete();
+    processed.delete();
+    kernel.delete();
     contours.delete();
     hierarchy.delete();
   }
@@ -100,7 +205,6 @@ export default function CameraView() {
       navigator.vibrate([75, 25, 75]);
     }
 
-    // Call shape detection
     if (window.cv && videoRef.current && canvasRef.current) {
       processVideoOnce(videoRef.current, canvasRef.current);
     }
