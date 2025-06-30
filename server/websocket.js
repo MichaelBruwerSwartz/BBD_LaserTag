@@ -15,15 +15,12 @@ const wss = new WebSocket.Server({ server })
 */
 
 function sendToClients(session, message, players, spectators) {
-    console.log('send to clients')
     if (players) for (let username in session.players) {
         const player = session.players[username]
         player.connection.send(message)
     }
     if (spectators) {
-        console.log('send to spectators')
         for (let id in session.spectators) {
-            console.log('sending to spectator', id)
             session.spectators[id].send(message)
         }
     }
@@ -51,7 +48,6 @@ wss.on('connection', (ws, req) => {
     if (isSpectator) {
         // spectators do not have usernames
         const id = randomUUID()
-        console.log(typeof id)
 
         if (session == null) {
             ws.close(1000, 'Session does not exist')
@@ -60,7 +56,6 @@ wss.on('connection', (ws, req) => {
 
         // add spectator to session
         session.spectators[id] = ws
-        console.log('spectators: ', session.spectators)
     } else {
         const { username } = query
 
@@ -74,7 +69,7 @@ wss.on('connection', (ws, req) => {
         if (session == null) {
             // create a new session if it doesn't exist
             session = appData.createSession(sessionId, username)
-            console.info(`Created new session with ID ${sessionId} for user ${username}`)
+            console.info(`Created new session with ID ${sessionId} for admin user ${username}`)
         } else {
             // Generate a new username if it already exists in the session
             while (Object.keys(session.players).includes(username)) {
@@ -90,7 +85,7 @@ wss.on('connection', (ws, req) => {
 
         // send player joined message
         sendToClients(session, JSON.stringify({
-            type: 'playerJoined',
+            type: 'playerJoin',
             username
         }), true, true)
         sendToClients(session, JSON.stringify({
@@ -136,7 +131,7 @@ wss.on('connection', (ws, req) => {
                 session.admin = newAdminUsername
 
                 sendToClients(session, JSON.stringify({
-                    type: 'adminChanged',
+                    type: 'adminChange',
                     username: newAdminUsername
                 }), true, true)
             }
@@ -146,7 +141,7 @@ wss.on('connection', (ws, req) => {
 
 function startWebocket() {
     server.listen(PORT, () => {
-        console.log(`WebSocket server running on ws://localhost:${PORT}`)
+        console.info(`WebSocket server running on ws://localhost:${PORT}`)
     })
 }
 
