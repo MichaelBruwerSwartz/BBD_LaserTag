@@ -14,17 +14,16 @@ app.use(cors())
 app.use(express.json())
 app.use(morgan('dev'))
 
-// Routes
+// routes
 app.use('/', router)
 
 // 404 handler
 app.use((req, res, next) => {
-  res.redirect('/') // redirect to home page
+    res.redirect('/') // redirect to home page
 })
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+    console.log(`Server running on port ${PORT}`)
 })
 
 // start websocket
