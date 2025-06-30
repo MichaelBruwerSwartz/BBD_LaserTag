@@ -1,6 +1,8 @@
 const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
+
+const websocket = require('./websocket')
 const router = require('./routes/index')
 
 const PORT = 3000
@@ -24,3 +26,6 @@ app.use((req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
+// start websocket
+websocket()

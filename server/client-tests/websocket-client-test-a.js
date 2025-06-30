@@ -1,13 +1,9 @@
 const socket = new WebSocket('ws://localhost:4000/session/2/spectator?username=cablexd')
 
 socket.onopen = () => {
-    const data = {
-        type: 'chat',
-        message: 'glhf everyone'
-    }
-    socket.send(JSON.stringify(data))
+    socket.send('message from client')
 }
 
 socket.onmessage = event => {
-    console.log('Server says: ', event.data)
+    console.log('Message from server: ', event.data)
 }
