@@ -17,6 +17,9 @@ const exampleSession = {
             connection: null, // websocket connection
             score: 0
         }
+    },
+    spectators: {
+        'id': 'websocket connection'
     }
 }
 
@@ -24,7 +27,8 @@ function createSession(id, adminUsername) {
     const session = {
         id,
         admin: adminUsername,
-        players: {}
+        players: {},
+        spectators: {}
     }
     sessions[id] = session
     return session
