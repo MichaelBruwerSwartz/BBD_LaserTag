@@ -81,7 +81,7 @@ wss.on('connection', (ws, req) => {
             delete session.spectators[id]
         })
     } else {
-        let { username } = query
+        let { color, username } = query
 
         if (!username || username.trim() === '') {
             ws.close(1000, 'Username is required')
@@ -105,7 +105,7 @@ wss.on('connection', (ws, req) => {
         // add player to session
         session.players[username] = {
             connection: ws,
-            color: getAvailablePlayerColor(session) ?? appData.colors[0]
+            color: color ?? getAvailablePlayerColor(session) ?? appData.colors[0]
         }
 
         // send player joined message
@@ -168,7 +168,13 @@ wss.on('connection', (ws, req) => {
             return
         }
 
-        // TODO: handle client messages
+        const { type } = message
+
+        if (type === 'startGame') {
+            sendToClients(session, JSON.stringify({
+                type: 'startGame'
+            }), true, true)
+        }
     })
 })
 

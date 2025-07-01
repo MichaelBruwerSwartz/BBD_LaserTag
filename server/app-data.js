@@ -16,8 +16,8 @@ const exampleSession = {
     players: {
         'cable': {
             connection: null, // websocket connection
-            score: 0,
-            color: 'blue'
+            color: 'blue',
+            points: 0
         }
     },
     spectators: {
