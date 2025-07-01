@@ -77,8 +77,6 @@ setInterval(() => {
     }
 }, 1000)
 
-// player: /session/:id
-// spectator: /session/:id/spectator
 wss.on('connection', (ws, req) => {
     const { pathname, query } = parse(req.url, true)
     const pathnameParts = pathname.split('/')
@@ -136,7 +134,8 @@ wss.on('connection', (ws, req) => {
         // add player to session
         session.players[username] = {
             connection: ws,
-            color: color ?? getAvailablePlayerColor(session) ?? appData.colors[0]
+            color: color ?? getAvailablePlayerColor(session) ?? appData.colors[0],
+            points: 50
         }
 
         // send player joined message
@@ -149,6 +148,49 @@ wss.on('connection', (ws, req) => {
             admin: session.admin,
             playerList: getPlayerList(session)
         }), true, true)
+
+        ws.on('message', message => {
+            try {
+                message = JSON.parse(message)
+            } catch (error) {
+                console.error(`Error processing message from client ${username}:`, error)
+                return
+            }
+
+            const { type } = message
+
+            if (type === 'hit') {
+                const { target: targetUsername, weapon } = message
+                const target = session.players[targetUsername]
+
+                if (!target || target.points <= 0) return
+
+                // update points
+                target.points = Math.max(target.points - 10, 0)
+                session.players[username].points = session.players[username].points + 5
+
+                sendToClients(session, JSON.stringify({
+                    type: 'hit',
+                    player: username,
+                    target: targetUsername,
+                    weapon
+                }), true, true)
+
+                console.log(`target points: ${target.points}, attacker points: ${session.players[username].points}`)
+                if (target.points <= 0) {
+                    sendToClients(session, JSON.stringify({
+                        type: 'elimination',
+                        player: username,
+                    }), true, true)
+                }
+            } else if (type === 'startGame') {
+                session.state = 'game'
+                session.timeLeft = 120
+                sendToClients(session, JSON.stringify({
+                    type: 'startGame'
+                }), true, true)
+            }
+        })
 
         ws.on('close', () => {
             console.info(`Player ${username} disconnected from session ${sessionId}`)
@@ -173,47 +215,6 @@ wss.on('connection', (ws, req) => {
             }), true, true)
         })
     }
-
-    ws.on('message', message => {
-        try {
-            message = JSON.parse(message)
-        } catch (error) {
-            console.error(`Error processing message from client:`, error)
-            return
-        }
-
-        const { type } = message
-
-        if (type === 'hit') {
-            const { target: targetUsername, weapon } = message
-            const target = session.players[targetUsername]
-
-            if (!target) return
-
-            // update points
-            target.points = Math.max(target.points - 10, 0)
-            player.points = player.points + 5
-
-            sendToClients(session, JSON.stringify({
-                type: 'hit',
-                player: username,
-                target: targetUsername,
-                weapon
-            }), true, true)
-
-            if (target.points <= 0) {
-                sendToClients(session, JSON.stringify({
-                    type: 'elimination',
-                    player: username,
-                }), true, true)
-            }
-        } else if (type === 'startGame') {
-            session.state = 'game'
-            sendToClients(session, JSON.stringify({
-                type: 'startGame'
-            }), true, true)
-        }
-    })
 })
 
 function startWebocket(port) {
