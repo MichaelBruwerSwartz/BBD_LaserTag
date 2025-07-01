@@ -54,5 +54,5 @@ server.listen(process.env.PORT || 4000, () => {
 });
 
 // start websocket
-WEBSOCKET_PORT = 5005;
+const WEBSOCKET_PORT = 5005;
 websocket(WEBSOCKET_PORT);
