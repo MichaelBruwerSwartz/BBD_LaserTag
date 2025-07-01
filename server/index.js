@@ -49,6 +49,7 @@ wss.on("connection", (ws, req) => {
 });
 
 app.get("/", (req, res) => res.send("Backend running"));
+console.log("Do i appear in the console?");
 
 server.listen(process.env.PORT || 4000, () => {
   console.log("Server running");
