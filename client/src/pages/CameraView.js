@@ -1,6 +1,5 @@
 /* global cv */
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 export default function CameraView() {
   const videoRef = useRef(null);
@@ -15,11 +14,11 @@ export default function CameraView() {
     r /= 255;
     g /= 255;
     b /= 255;
-
+    
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
-
+    
     let h = 0;
     if (delta === 0) {
       h = 0;
@@ -30,18 +29,18 @@ export default function CameraView() {
     } else {
       h = (r - g) / delta + 4;
     }
-
+    
     h = Math.round(h * 60);
     if (h < 0) h += 360;
-
+    
     const s = max === 0 ? 0 : delta / max;
     const v = max;
-
+    
     // Classify based on HSV values
     if (v < 0.2) return "black";
     if (s < 0.1 && v > 0.8) return "white";
     if (s < 0.2) return "gray";
-
+    
     if (h < 15 || h > 345) return "red";
     if (h >= 15 && h < 45) return "orange";
     if (h >= 45 && h < 75) return "yellow";
@@ -49,6 +48,14 @@ export default function CameraView() {
     if (h >= 165 && h < 255) return "blue";
     if (h >= 255 && h < 315) return "purple";
     return "pink";
+  }
+
+  // Function called when a hit is detected at center
+  function hitDetected(color, shape) {
+    const msg = `✅ Hit detected: ${color} ${shape}`;
+    console.log(msg);
+    window.alert(msg)
+    if (logRef.current) logRef.current.textContent = msg;
   }
 
   function processVideoOnce(video, canvas) {
@@ -73,7 +80,7 @@ export default function CameraView() {
     // Convert to grayscale and apply preprocessing
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     cv.GaussianBlur(gray, processed, new cv.Size(7, 7), 1.5);
-
+    
     // Use adaptive thresholding for better binarization
     cv.adaptiveThreshold(
       processed,
@@ -84,14 +91,11 @@ export default function CameraView() {
       11,
       2
     );
-
+    
     // Morphological operations to clean up noise
-    const kernel = cv.getStructuringElement(
-      cv.MORPH_ELLIPSE,
-      new cv.Size(3, 3)
-    );
+    const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3, 3));
     cv.morphologyEx(processed, processed, cv.MORPH_CLOSE, kernel);
-
+    
     // Find contours
     cv.findContours(
       processed,
@@ -100,6 +104,10 @@ export default function CameraView() {
       cv.RETR_TREE,
       cv.CHAIN_APPROX_SIMPLE
     );
+
+    // Center point of canvas to check for reticle
+    const centerX = width / 2;
+    const centerY = height / 2;
 
     // Process contours
     for (let i = 0; i < contours.size(); ++i) {
@@ -114,57 +122,45 @@ export default function CameraView() {
       }
 
       const approx = new cv.Mat();
-      // Use more precise approximation for triangles
       cv.approxPolyDP(cnt, approx, 0.015 * perimeter, true);
       const vertices = approx.rows;
-
-      // Calculate solidity to distinguish irregular shapes
+      
       const hull = new cv.Mat();
       cv.convexHull(cnt, hull);
       const hullArea = cv.contourArea(hull);
       const solidity = hullArea > 0 ? area / hullArea : 0;
-
+      
       let shape = "";
       if (vertices === 3) {
         // Triangle detection with additional validation
-        const triangleAspectRatio =
-          Math.max(
-            cv.boundingRect(approx).width,
-            cv.boundingRect(approx).height
-          ) /
-          Math.min(
-            cv.boundingRect(approx).width,
-            cv.boundingRect(approx).height
-          );
-
+        const triRect = cv.boundingRect(approx);
+        const triangleAspectRatio = Math.max(triRect.width, triRect.height) / Math.min(triRect.width, triRect.height);
         if (solidity > 0.85 && triangleAspectRatio < 2.5) {
           shape = "Triangle";
         }
       } else if (vertices === 4) {
-        // Check for rectangles vs squares
         const rect = cv.minAreaRect(cnt);
-        const aspectRatio =
-          Math.max(rect.size.width, rect.size.height) /
-          Math.min(rect.size.width, rect.size.height);
+        const aspectRatio = Math.max(rect.size.width, rect.size.height) / Math.min(rect.size.width, rect.size.height);
         shape = aspectRatio > 1.2 ? "Rectangle" : "Square";
       }
 
       if (shape) {
-        // Create mask for the current contour
+        // Check if the center point lies within the contour (reticle inside)
+        const dist = cv.pointPolygonTest(cnt, new cv.Point(centerX, centerY), false);
+        
+        // Create mask and get color
         const mask = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
         cv.drawContours(mask, contours, i, new cv.Scalar(255), -1);
-
-        // Calculate mean color within the contour
         const meanColor = cv.mean(src, mask);
         mask.delete();
-
-        // Extract RGB components
         const r = Math.round(meanColor[0]);
         const g = Math.round(meanColor[1]);
         const b = Math.round(meanColor[2]);
-
-        // Get color name
         const colorName = getColorName(r, g, b);
+
+        if (shape === "Triangle" && dist >= 0) {
+          hitDetected(colorName, shape);
+        }
 
         // Draw contour
         ctx.strokeStyle = "lime";
@@ -237,13 +233,9 @@ export default function CameraView() {
     };
 
     if (!zoomEnabled) {
-      document.addEventListener("gesturestart", preventZoom, {
-        passive: false,
-      });
+      document.addEventListener("gesturestart", preventZoom, { passive: false });
       document.addEventListener("dblclick", preventZoom, { passive: false });
-      document.addEventListener("touchend", doubleTapBlocker, {
-        passive: false,
-      });
+      document.addEventListener("touchend", doubleTapBlocker, { passive: false });
 
       return () => {
         document.removeEventListener("gesturestart", preventZoom);
