@@ -17,8 +17,13 @@ export default function LandingPage() {
   };
 
   const joinSpectatorLobby = () => {
-    <Link to="/spectator_lobby" />;
-  };
+  navigate("/spectator_lobby", {
+    state: {
+      gameCode,
+      username,
+    },
+  });
+};
 
   return (
     <div
@@ -82,7 +87,7 @@ export default function LandingPage() {
         </button>
 
         <button
-          onClick={() => joinSpectatorLobby}
+          onClick={() => joinSpectatorLobby()}
           style={{
             padding: "0.75rem 1.5rem",
             fontSize: "1rem",
