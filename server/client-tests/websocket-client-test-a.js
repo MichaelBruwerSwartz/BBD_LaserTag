@@ -1,13 +1,13 @@
-const socket = new WebSocket('ws://localhost:4000/session/2?username=cablexd')
+const socket = new WebSocket("https://bbd-lasertag.onrender.com");
 
 socket.onopen = () => {
-      const data = {
-        type: 'chat',
-        message: 'glhf everyone'
-    }
-    socket.send(JSON.stringify(data))
-}
+  const data = {
+    type: "chat",
+    message: "glhf everyone",
+  };
+  socket.send(JSON.stringify(data));
+};
 
-socket.onmessage = event => {
-    console.log('Message from server: ', event.data)
-}
+socket.onmessage = (event) => {
+  console.log("Message from server: ", event.data);
+};
