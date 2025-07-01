@@ -1,3 +1,4 @@
+const colors = ['blue', 'red', 'purple', 'orange'] // available player colors
 const sessions = {}
 // sessions will be automatically removed when all player websocket connections have been closed
 
@@ -15,7 +16,8 @@ const exampleSession = {
     players: {
         'cable': {
             connection: null, // websocket connection
-            score: 0
+            score: 0,
+            color: 'blue'
         }
     },
     spectators: {
@@ -39,6 +41,7 @@ function isSessionValid(sessionId) {
 }
 
 module.exports = {
+    colors,
     createSession,
     isSessionValid,
     sessions,

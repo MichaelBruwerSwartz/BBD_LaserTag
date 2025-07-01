@@ -26,7 +26,24 @@ function sendToClients(session, message, sendToPlayers, sendToSpectators) {
 }
 
 function getPlayerList(session) {
-    return Object.keys(session.players)
+    return Object.keys(session.players).map(username => {
+        return {
+            username,
+            color: session.players[username].color
+        }
+    })
+}
+
+function getAvailablePlayerColor(session) {
+    const usedColors = new Set(Object.values(session.players).map(player => player.color))
+
+    for (const color of appData.colors) {
+        if (!usedColors.has(color)) {
+            return color
+        }
+    }
+
+    return null
 }
 
 // player: /session/:id
@@ -87,7 +104,8 @@ wss.on('connection', (ws, req) => {
 
         // add player to session
         session.players[username] = {
-            connection: ws
+            connection: ws,
+            color: getAvailablePlayerColor(session) ?? appData.colors[0]
         }
 
         // send player joined message
