@@ -8,7 +8,6 @@ export default function PlayerLobby() {
 
   const { state } = useLocation();
   const { gameCode, username } = state || {};
-  const [userColor, setUserColor] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,13 +32,14 @@ export default function PlayerLobby() {
         setAdminUsername(data.admin);
       }
       if (data.type === "startGame") {
-        const currentPlayer = players.find((p) => p.username === username);
-        setUserColor(currentPlayer?.color);
+        const currentPlayer = data.playerList?.find(
+          (p) => p.username === username
+        );
         navigate("/camera_view", {
           state: {
             username,
             gameCode,
-            userColor,
+            color: currentPlayer?.color || "#fff",
           },
         });
       }
