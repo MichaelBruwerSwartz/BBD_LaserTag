@@ -9,6 +9,10 @@ export default function CameraView() {
   const [gunType, setGunType] = useState("pistol");
   const [zoomEnabled, setZoomEnabled] = useState(false);
 
+  //Game Details
+  //const [gameTime, setGameTime] = useState(0);
+  const [gameTimeString, setGameTimeString] = useState("00:00");
+
   const location = useLocation();
   const { username, gameCode, color } = location.state || {};
 
@@ -31,7 +35,15 @@ export default function CameraView() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log("Message from server:", data);
-      // Add logic here for in-game updates if needed DO ALL THE IF STATEMENTS HERE FOR RESPOSES FROM SERVER
+
+      // Add logic here for in-game updates
+      if (data.type === "gameUpdate") {
+        const mins = Math.floor(data.timeLeft / 60);
+        const secs = data.timeLeft % 60; // <-- corrected variable name
+        setGameTimeString(
+          `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+        );
+      }
     };
 
     socket.onclose = () => console.log("WebSocket closed");
@@ -86,6 +98,7 @@ export default function CameraView() {
 
   // Function called when a hit is detected at center
   function hitDetected(targetColor, targetShape) {
+    window.alert("hit the " + targetColor + " " + targetShape);
     const hitPayload = {
       type: "hit",
       weapon: gunType,
@@ -467,6 +480,23 @@ export default function CameraView() {
           <button onClick={() => selectGun("pistol")}>🔫 Pistol</button>
           <button onClick={() => selectGun("shotgun")}>💥 Shotgun</button>
           <button onClick={() => selectGun("sniper")}>🎯 Sniper</button>
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            top: "2%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "white",
+            fontSize: "24px",
+            fontWeight: "bold",
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            padding: "6px 12px",
+            borderRadius: "8px",
+            zIndex: 5,
+          }}
+        >
+          {gameTimeString}
         </div>
       </div>
     </div>
