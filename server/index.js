@@ -57,5 +57,6 @@ import websocket from "./websocket.js";
 // });
 
 // start websocket
-const WEBSOCKET_PORT = 4000;
-websocket(WEBSOCKET_PORT);
+const PORT = process.env.PORT || 4000;
+console.log(`PORT: ${PORT}`);
+websocket(PORT);
