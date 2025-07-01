@@ -78,7 +78,6 @@ setInterval(() => {
 }, 1000)
 
 wss.on('connection', (ws, req) => {
-    console.log('CONNECTION FROM CLIENT!!')
     const { pathname, query } = parse(req.url, true)
     const pathnameParts = pathname.split('/')
 
@@ -158,10 +157,12 @@ wss.on('connection', (ws, req) => {
                 return
             }
 
+            console.info(`Received message from client ${username}:`, message)
+
             const { type } = message
 
             if (type === 'hit') {
-                const { target: targetUsername, weapon } = message
+                const { targetColor, targetShape, weapon } = message
                 const target = session.players[targetUsername]
 
                 if (!target || target.points <= 0) return
@@ -177,7 +178,6 @@ wss.on('connection', (ws, req) => {
                     weapon
                 }), true, true)
 
-                console.log(`target points: ${target.points}, attacker points: ${session.players[username].points}`)
                 if (target.points <= 0) {
                     sendToClients(session, JSON.stringify({
                         type: 'elimination',
@@ -200,8 +200,8 @@ wss.on('connection', (ws, req) => {
             delete session.players[username]
 
             // check if admin left
-            if (session.admin === username && Object.keys(session.players).length > 0) {
-                session.admin = Object.keys(session.players)[0] // pick new admin
+            if (session.admin === username) {
+                session.admin = (Object.keys(session.players).length > 0) ? Object.keys(session.players)[0] : null // pick new admin
             }
 
             // send player quit message
