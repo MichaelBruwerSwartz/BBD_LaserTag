@@ -49,6 +49,10 @@ wss.on("connection", (ws, req) => {
 
 app.get("/", (req, res) => res.send("Backend running"));
 
-server.listen(process.env.PORT || 5005, () => {
+server.listen(process.env.PORT || 4000, () => {
   console.log("Server running");
 });
+
+// start websocket
+WEBSOCKET_PORT = 5005;
+websocket(WEBSOCKET_PORT);
