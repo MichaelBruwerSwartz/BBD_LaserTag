@@ -28,6 +28,7 @@ export default function PlayerLobby() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "playerListUpdate") {
+        console.log("THIS IS THE PLAYERLIST" + data.playerList);
         setPlayers(data.playerList);
         setAdminUsername(data.admin);
       }
