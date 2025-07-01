@@ -2,7 +2,7 @@
 // const cors = require("cors")
 // const morgan = require("morgan")
 
-const websocket = require("./websocket");
+//const websocket = require("./websocket");
 // const router = require("./routes/index")
 
 // const PORT = 4000
@@ -33,6 +33,7 @@ const websocket = require("./websocket");
 import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
+import websocket from "./websocket.js";
 
 const app = express();
 const server = http.createServer(app);
