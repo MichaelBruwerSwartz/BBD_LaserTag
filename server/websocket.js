@@ -139,6 +139,7 @@ wss.on('connection', (ws, req) => {
         // add player to session
         session.players[username] = {
             connection: ws,
+            username,
             color: color ?? getAvailablePlayerColor(session) ?? appData.colors[0],
             points: 50
         }
@@ -167,28 +168,8 @@ wss.on('connection', (ws, req) => {
             const { type } = message
 
             if (type === 'hit') {
-                const { targetColor, targetShape, weapon } = message
-                const target = session.players[targetUsername]
-
-                if (!target || target.points <= 0) return
-
-                // update points
-                target.points = Math.max(target.points - 10, 0)
-                session.players[username].points = session.players[username].points + 5
-
-                sendToClients(session, JSON.stringify({
-                    type: 'hit',
-                    player: username,
-                    target: targetUsername,
-                    weapon
-                }), true, true)
-
-                if (target.points <= 0) {
-                    sendToClients(session, JSON.stringify({
-                        type: 'elimination',
-                        player: username,
-                    }), true, true)
-                }
+                const { color, shape, weapon } = message
+                handleHit(session, session.players[username], color, shape, weapon)
             } else if (type === 'startGame') {
                 session.state = 'game'
                 session.timeLeft = 120
@@ -222,6 +203,49 @@ wss.on('connection', (ws, req) => {
         })
     }
 })
+
+function handleHit(session, player, color, shape, weapon) {
+    // get target from color
+    let target
+    for (let playerUsername in session.players) {
+        if (session.players[playerUsername].color === color) {
+            target = session.players[playerUsername]
+            break
+        }
+    }
+    if (!target || target.points <= 0) return
+
+    if (shape === 'triangle') {
+        const damages = {
+            pistol: 16,
+            sniper: 32,
+            shotgun: 8
+        }
+        const pointsLost = damages[weapon] ?? 0
+        const pointsGained = pointsLost / 2
+
+        // update points
+        target.points = Math.max(target.points - pointsLost, 0)
+        player.points = player.points + pointsGained
+
+        sendToClients(session, JSON.stringify({
+            type: 'hit',
+            player: player.username,
+            target: target.username,
+            weapon
+        }), true, true)
+
+        if (target.points <= 0) {
+            sendToClients(session, JSON.stringify({
+                type: 'elimination',
+                player: target.username,
+                weapon
+            }), true, true)
+        }
+    } else if (shape === 'rectangle') {
+        // TODO: powerups
+    }
+}
 
 function start(port) {
     server.listen(port, () => {

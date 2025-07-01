@@ -1,4 +1,5 @@
-const socket = new WebSocket("https://bbd-lasertag.onrender.com");
+const endpoint = "http://localhost:4000/session/a?username=cablexd" // "https://bbd-lasertag.onrender.com"
+const socket = new WebSocket(endpoint);
 
 socket.onopen = () => {
     console.log('Connected to session')
@@ -12,7 +13,8 @@ setInterval(() => {
     console.log('sending hit data')
     const data = {
         type: 'hit',
-        target: 'noobmaster',
+        color: 'blue',
+        shape: 'triangle',
         weapon: 'pistol'
     }
     socket.send(JSON.stringify(data))

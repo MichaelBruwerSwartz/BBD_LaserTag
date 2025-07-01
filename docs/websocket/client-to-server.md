@@ -26,8 +26,9 @@ Types:
 
 Sent when a player hits another player.
 
-- `target` - username of player who was hit
-- `weapon` - the weapon that was used to attack the target
+- `color` - color that was hit
+- `shape` - shape that was hit
+- `weapon` - the weapon that was used to hit the target
 
 ### `startGame`
 
