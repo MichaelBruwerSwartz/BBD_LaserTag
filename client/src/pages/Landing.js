@@ -41,11 +41,10 @@ export default function LandingPage() {
         overflow: "hidden",
       }}
     >
-      {/* Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
+      {/* GIF Background */}
+      <img
+        src="/images/laser-tag-landing.gif"
+        alt="Background"
         style={{
           position: "absolute",
           top: 0,
@@ -55,20 +54,18 @@ export default function LandingPage() {
           objectFit: "cover",
           zIndex: -1,
         }}
-      >
-        <source src="/images/laser-tag-landing.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      />
 
       {/* Logo Section */}
       <div
         style={{
-          height: "50vh", // Increased to make logo larger (adjust as needed)
+          height: "35vh", // Reduced from 40vh for balance
           width: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          marginBottom: "1rem",
+          marginBottom: "0",
+          marginTop: "-5vh", // Moves logo higher
           zIndex: 1,
         }}
       >
@@ -76,9 +73,9 @@ export default function LandingPage() {
           src="/images/Laser-Tag.png"
           alt="Game Logo"
           style={{
-            maxHeight: "100%", // Scales to fit the 50vh container
-            maxWidth: "90%", // Limits width to prevent overflow
-            objectFit: "contain", // Preserves aspect ratio
+            maxHeight: "90%",
+            maxWidth: "90%",
+            objectFit: "contain",
           }}
         />
       </div>
@@ -92,12 +89,13 @@ export default function LandingPage() {
           boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
           textAlign: "center",
           zIndex: 1,
-          maxHeight: "40vh", // Adjusted to fit with larger logo within 100vh
+          maxHeight: "50vh",
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
+          marginTop: "-5vh", // Adjusted to match new logo height
         }}
       >
         <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>Enter Code:</h1>
@@ -118,9 +116,7 @@ export default function LandingPage() {
             outline: "none",
           }}
         />
-        <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>
-          Enter Username:
-        </h1>
+        <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>Enter Username:</h1>
         <input
           type="text"
           value={username}
