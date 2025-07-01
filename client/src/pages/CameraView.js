@@ -38,6 +38,8 @@ export default function CameraView() {
 
       // Add logic here for in-game updates
       if (data.type === "gameUpdate") {
+        console.log(data);
+        console.log("THIS IS THE TIME LEFT SENT" + data.timeLeft);
         const mins = Math.floor(data.timeLeft / 60);
         const secs = data.timeLeft % 60; // <-- corrected variable name
         setGameTimeString(
@@ -469,7 +471,7 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            top: "5%",
+            bottom: "5%",
             left: "50%",
             transform: "translateX(-50%)",
             display: "flex",
