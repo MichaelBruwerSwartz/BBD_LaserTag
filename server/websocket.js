@@ -97,6 +97,7 @@ wss.on('connection', (ws, req) => {
         }), true, true)
         sendToClients(session, JSON.stringify({
             type: 'playerListUpdate',
+            admin: session.admin,
             playerList: getPlayerList(session)
         }), true, true)
 
@@ -124,6 +125,7 @@ wss.on('connection', (ws, req) => {
             }), true, true)
             sendToClients(session, JSON.stringify({
                 type: 'playerListUpdate',
+                admin: session.admin,
                 playerList: getPlayerList(session)
             }), true, true)
 
