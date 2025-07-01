@@ -1,4 +1,4 @@
-const socket = new WebSocket('ws://localhost:4000/session/2?username=cablexd')
+const socket = new WebSocket('ws://localhost:5005/session/2?username=cablexd')
 
 socket.onopen = () => {
       const data = {

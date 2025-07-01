@@ -46,6 +46,37 @@ function getAvailablePlayerColor(session) {
     return null
 }
 
+// game timers, information updates, session closing
+setInterval(() => {
+    for (let session of Object.values(appData.sessions)) {
+        // check if should close session
+        if (Object.keys(session.players).length === 0) {
+            session.persistTime -= 1
+
+            if (session.persistTime <= 0) {
+                delete appData.sessions[session.id]
+                console.info(`Session ${session.id} closed`)
+
+                sendToClients(session, JSON.stringify({
+                    type: 'sessionClose'
+                }), false, true)
+
+                return
+            }
+        } else {
+            session.persistTime = appData.SESSION_PERSIST_TIME
+        }
+        if (session.state === 'game') {
+            session.timeLeft -= 1
+            sendToClients(session, JSON.stringify({
+                type: 'gameUpdate',
+                timeLeft: session.timeLeft,
+                players: Object.fromEntries(Object.entries(session.players).map(([username, player]) => [username, player.points]))
+            }), true, true)
+        }
+    }
+}, 1000)
+
 // player: /session/:id
 // spectator: /session/:id/spectator
 wss.on('connection', (ws, req) => {
@@ -122,19 +153,13 @@ wss.on('connection', (ws, req) => {
         ws.on('close', () => {
             console.info(`Player ${username} disconnected from session ${sessionId}`)
 
-            // check if should close session
-            if (Object.keys(session.players).length === 1) {
-                delete appData.sessions[sessionId]
-                console.info(`Session ${sessionId} closed`)
-
-                sendToClients(session, JSON.stringify({
-                    type: 'sessionClose'
-                }), false, true)
-                return
-            }
-
             // remove player from session
             delete session.players[username]
+
+            // check if admin left
+            if (session.admin === username && Object.keys(session.players).length > 0) {
+                session.admin = Object.keys(session.players)[0] // pick new admin
+            }
 
             // send player quit message
             sendToClients(session, JSON.stringify({
@@ -146,17 +171,6 @@ wss.on('connection', (ws, req) => {
                 admin: session.admin,
                 playerList: getPlayerList(session)
             }), true, true)
-
-            // check if admin left
-            if (session.admin === username) {
-                let newAdminUsername = Object.keys(session.players)[0] // pick new admin
-                session.admin = newAdminUsername
-
-                sendToClients(session, JSON.stringify({
-                    type: 'adminChange',
-                    username: newAdminUsername
-                }), true, true)
-            }
         })
     }
 
@@ -171,6 +185,7 @@ wss.on('connection', (ws, req) => {
         const { type } = message
 
         if (type === 'startGame') {
+            session.state = 'game'
             sendToClients(session, JSON.stringify({
                 type: 'startGame'
             }), true, true)

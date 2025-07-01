@@ -1,3 +1,5 @@
+SESSION_PERSIST_TIME = 10
+
 const colors = ['blue', 'red', 'purple', 'orange'] // available player colors
 const sessions = {}
 // sessions will be automatically removed when all player websocket connections have been closed
@@ -12,7 +14,10 @@ function getUniqueSessionId() {
 
 const exampleSession = {
     id: 1,
+    state: 'lobby', // lobby, game, finished
     admin: 'cable',
+    timeLeft: 60, // seconds
+    persistTime: 10, // seconds until session is closed
     players: {
         'cable': {
             connection: null, // websocket connection
@@ -28,7 +33,9 @@ const exampleSession = {
 function createSession(id, adminUsername) {
     const session = {
         id,
+        state: 'lobby',
         admin: adminUsername,
+        persistTime: SESSION_PERSIST_TIME,
         players: {},
         spectators: {}
     }
@@ -41,6 +48,7 @@ function isSessionValid(sessionId) {
 }
 
 module.exports = {
+    SESSION_PERSIST_TIME,
     colors,
     createSession,
     isSessionValid,

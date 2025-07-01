@@ -12,11 +12,18 @@ field2: 'any data'
 
 Types:
 
-### `adminChange`
+### `endGame`
 
-Sent to **players and spectators** when the admin of a session changes.
+Sent to **players and spectators** when the game ends.
 
-- `username` - username of the new admin
+### `gameUpdate`
+
+Sent to **players and spectators** every second and contains all game information.
+
+- `players` - players and their information
+  - key: player username
+  - value: player points
+- `timeLeft` - time that remains in seconds
 
 ### `playerJoin`
 
