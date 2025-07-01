@@ -1,5 +1,6 @@
 /* global cv */
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 export default function CameraView() {
   const videoRef = useRef(null);
@@ -8,17 +9,65 @@ export default function CameraView() {
   const [gunType, setGunType] = useState("pistol");
   const [zoomEnabled, setZoomEnabled] = useState(false);
 
+  //Game Details
+  //const [gameTime, setGameTime] = useState(0);
+  const [gameTimeString, setGameTimeString] = useState("00:00");
+
+  const location = useLocation();
+  const { username, gameCode, color } = location.state || {};
+
+  const socketRef = useRef(null);
+  useEffect(() => {
+    if (!username || !gameCode || !color) {
+      console.warn("Missing required values to connect WebSocket.");
+      return;
+    }
+
+    console.log(username, gameCode, color)
+    const socket = new WebSocket(
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
+    );
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log("Connected to server with WebSocket!");
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("Message from server:", data);
+
+      // Add logic here for in-game updates
+      if (data.type === "gameUpdate") {
+        console.log(data);
+        console.log("THIS IS THE TIME LEFT SENT" + data.timeLeft);
+        const mins = Math.floor(data.timeLeft / 60);
+        const secs = data.timeLeft % 60; // <-- corrected variable name
+        setGameTimeString(
+          `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+        );
+      }
+    };
+
+    socket.onclose = () => console.log("WebSocket closed");
+    socket.onerror = (e) => console.error("WebSocket error", e);
+
+    return () => {
+      socket.close();
+    };
+  }, [username, gameCode, color]);
+
   // Helper function to get color name from RGB values
   function getColorName(r, g, b) {
     // Convert RGB to HSV for easier color classification
     r /= 255;
     g /= 255;
     b /= 255;
-    
+
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
-    
+
     let h = 0;
     if (delta === 0) {
       h = 0;
@@ -29,18 +78,18 @@ export default function CameraView() {
     } else {
       h = (r - g) / delta + 4;
     }
-    
+
     h = Math.round(h * 60);
     if (h < 0) h += 360;
-    
+
     const s = max === 0 ? 0 : delta / max;
     const v = max;
-    
+
     // Classify based on HSV values
     if (v < 0.2) return "black";
     if (s < 0.1 && v > 0.8) return "white";
     if (s < 0.2) return "gray";
-    
+
     if (h < 15 || h > 345) return "red";
     if (h >= 15 && h < 45) return "orange";
     if (h >= 45 && h < 75) return "yellow";
@@ -48,6 +97,29 @@ export default function CameraView() {
     if (h >= 165 && h < 255) return "blue";
     if (h >= 255 && h < 315) return "purple";
     return "pink";
+  }
+
+  // Function called when a hit is detected at center
+  function hitDetected(targetColor, targetShape) {
+    window.alert("hit the " + targetColor + " " + targetShape);
+    const hitPayload = {
+      type: "hit",
+      weapon: gunType,
+      shape: targetShape,
+      color: targetColor,
+    };
+
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify(hitPayload));
+      console.log("Sent hit:", hitPayload);
+    } else {
+      console.warn("WebSocket not open. Hit not sent.");
+    }
+
+    // Optionally update UI or log (remove alert if no longer needed)
+    if (logRef.current) {
+      logRef.current.textContent = `Hit sent: ${targetColor} ${targetShape} with ${gunType}`;
+    }
   }
 
   function processVideoOnce(video, canvas) {
@@ -72,7 +144,7 @@ export default function CameraView() {
     // Convert to grayscale and apply preprocessing
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     cv.GaussianBlur(gray, processed, new cv.Size(7, 7), 1.5);
-    
+
     // Use adaptive thresholding for better binarization
     cv.adaptiveThreshold(
       processed,
@@ -83,11 +155,14 @@ export default function CameraView() {
       11,
       2
     );
-    
+
     // Morphological operations to clean up noise
-    const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3, 3));
+    const kernel = cv.getStructuringElement(
+      cv.MORPH_ELLIPSE,
+      new cv.Size(3, 3)
+    );
     cv.morphologyEx(processed, processed, cv.MORPH_CLOSE, kernel);
-    
+
     // Find contours
     cv.findContours(
       processed,
@@ -96,6 +171,10 @@ export default function CameraView() {
       cv.RETR_TREE,
       cv.CHAIN_APPROX_SIMPLE
     );
+
+    // Center point of canvas to check for reticle
+    const centerX = width / 2;
+    const centerY = height / 2;
 
     // Process contours
     for (let i = 0; i < contours.size(); ++i) {
@@ -110,55 +189,54 @@ export default function CameraView() {
       }
 
       const approx = new cv.Mat();
-      // Use more precise approximation for triangles
       cv.approxPolyDP(cnt, approx, 0.015 * perimeter, true);
       const vertices = approx.rows;
-      
-      // Calculate solidity to distinguish irregular shapes
+
       const hull = new cv.Mat();
       cv.convexHull(cnt, hull);
       const hullArea = cv.contourArea(hull);
       const solidity = hullArea > 0 ? area / hullArea : 0;
-      
+
       let shape = "";
       if (vertices === 3) {
         // Triangle detection with additional validation
-        const triangleAspectRatio = Math.max(
-          cv.boundingRect(approx).width,
-          cv.boundingRect(approx).height
-        ) / Math.min(
-          cv.boundingRect(approx).width,
-          cv.boundingRect(approx).height
-        );
-        
+        const triRect = cv.boundingRect(approx);
+        const triangleAspectRatio =
+          Math.max(triRect.width, triRect.height) /
+          Math.min(triRect.width, triRect.height);
         if (solidity > 0.85 && triangleAspectRatio < 2.5) {
           shape = "Triangle";
         }
       } else if (vertices === 4) {
-        // Check for rectangles vs squares
         const rect = cv.minAreaRect(cnt);
-        const aspectRatio = Math.max(rect.size.width, rect.size.height) / 
-                           Math.min(rect.size.width, rect.size.height);
+        const aspectRatio =
+          Math.max(rect.size.width, rect.size.height) /
+          Math.min(rect.size.width, rect.size.height);
         shape = aspectRatio > 1.2 ? "Rectangle" : "Square";
       }
 
       if (shape) {
-        // Create mask for the current contour
+        // Check if the center point lies within the contour (reticle inside)
+        const dist = cv.pointPolygonTest(
+          cnt,
+          new cv.Point(centerX, centerY),
+          false
+        );
+
+        // Create mask and get color
         const mask = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
         cv.drawContours(mask, contours, i, new cv.Scalar(255), -1);
-        
-        // Calculate mean color within the contour
         const meanColor = cv.mean(src, mask);
         mask.delete();
-        
-        // Extract RGB components
         const r = Math.round(meanColor[0]);
         const g = Math.round(meanColor[1]);
         const b = Math.round(meanColor[2]);
-        
-        // Get color name
         const colorName = getColorName(r, g, b);
-        
+
+        if (shape === "Triangle" && dist >= 0) {
+          hitDetected(colorName, shape);
+        }
+
         // Draw contour
         ctx.strokeStyle = "lime";
         ctx.lineWidth = 3;
@@ -394,7 +472,7 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            top: "5%",
+            bottom: "5%",
             left: "50%",
             transform: "translateX(-50%)",
             display: "flex",
@@ -405,6 +483,23 @@ export default function CameraView() {
           <button onClick={() => selectGun("pistol")}>🔫 Pistol</button>
           <button onClick={() => selectGun("shotgun")}>💥 Shotgun</button>
           <button onClick={() => selectGun("sniper")}>🎯 Sniper</button>
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            top: "2%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "white",
+            fontSize: "24px",
+            fontWeight: "bold",
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            padding: "6px 12px",
+            borderRadius: "8px",
+            zIndex: 5,
+          }}
+        >
+          {gameTimeString}
         </div>
       </div>
     </div>

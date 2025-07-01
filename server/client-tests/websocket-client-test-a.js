@@ -1,13 +1,21 @@
-const socket = new WebSocket('ws://localhost:4000/session/2?username=cablexd')
+const endpoint = "http://localhost:4000/session/a?username=cablexd" // "https://bbd-lasertag.onrender.com"
+const socket = new WebSocket(endpoint);
 
 socket.onopen = () => {
-      const data = {
-        type: 'chat',
-        message: 'glhf everyone'
-    }
-    socket.send(JSON.stringify(data))
+    console.log('Connected to session')
 }
 
 socket.onmessage = event => {
     console.log('Message from server: ', event.data)
 }
+
+setInterval(() => {
+    console.log('sending hit data')
+    const data = {
+        type: 'hit',
+        color: 'blue',
+        shape: 'triangle',
+        weapon: 'pistol'
+    }
+    socket.send(JSON.stringify(data))
+}, 1000)

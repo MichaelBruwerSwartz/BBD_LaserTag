@@ -4,8 +4,6 @@ const { randomUUID } = require('crypto')
 const { parse } = require('url')
 const appData = require('./app-data')
 
-const PORT = 4000
-
 const server = http.createServer()
 const wss = new WebSocket.Server({ server })
 
@@ -28,11 +26,62 @@ function sendToClients(session, message, sendToPlayers, sendToSpectators) {
 }
 
 function getPlayerList(session) {
-    return Object.keys(session.players)
+    return Object.keys(session.players).map(username => {
+        return {
+            username,
+            color: session.players[username].color
+        }
+    })
 }
 
-// player: /session/:id
-// spectator: /session/:id/spectator
+function getAvailablePlayerColor(session) {
+    const usedColors = new Set(Object.values(session.players).map(player => player.color))
+
+    for (const color of appData.colors) {
+        if (!usedColors.has(color)) {
+            return color
+        }
+    }
+
+    return null
+}
+
+// game timers, information updates, session closing
+setInterval(() => {
+    for (let session of Object.values(appData.sessions)) {
+        // check if should close session
+        if (Object.keys(session.players).length === 0) {
+            session.persistTime -= 1
+
+            if (session.persistTime <= 0) {
+                delete appData.sessions[session.id]
+                console.info(`Session ${session.id} closed`)
+
+                sendToClients(session, JSON.stringify({
+                    type: 'sessionClose'
+                }), false, true)
+
+                return
+            }
+        } else {
+            session.persistTime = appData.SESSION_PERSIST_TIME
+        }
+        if (session.state === 'game') {
+            session.timeLeft -= 1
+
+            sendToClients(session, JSON.stringify({
+                type: 'gameUpdate',
+                timeLeft: session.timeLeft,
+                players: Object.fromEntries(Object.entries(session.players).map(([username, player]) => [username, player.points]))
+            }), true, true)
+
+            if (session.timeLeft <= 0) {
+                session.state = 'finished'
+            }
+        }
+    }
+}, 1000)
+
 wss.on('connection', (ws, req) => {
     const { pathname, query } = parse(req.url, true)
     const pathnameParts = pathname.split('/')
@@ -66,7 +115,7 @@ wss.on('connection', (ws, req) => {
             delete session.spectators[id]
         })
     } else {
-        const { username } = query
+        let { color, username } = query
 
         if (!username || username.trim() === '') {
             ws.close(1000, 'Username is required')
@@ -83,13 +132,21 @@ wss.on('connection', (ws, req) => {
                 const randomSuffix = Math.floor(Math.random() * 10)
                 username += randomSuffix
             }
+
+            // set admin if no admin exists
+            if (session.admin == null) {
+                session.admin = username
+            }
         }
 
         console.info(`Player ${username} connected to session ${sessionId}`)
 
         // add player to session
         session.players[username] = {
-            connection: ws
+            connection: ws,
+            username,
+            color: color ?? getAvailablePlayerColor(session) ?? appData.colors[0],
+            points: 50
         }
 
         // send player joined message
@@ -99,25 +156,45 @@ wss.on('connection', (ws, req) => {
         }), true, true)
         sendToClients(session, JSON.stringify({
             type: 'playerListUpdate',
+            admin: session.admin,
             playerList: getPlayerList(session)
         }), true, true)
+
+        ws.on('message', message => {
+            try {
+                message = JSON.parse(message)
+            } catch (error) {
+                console.error(`Error processing message from client ${username}:`, error)
+                return
+            }
+
+            console.info(`Received message from client ${username}:`, message)
+
+            const { type } = message
+
+            if (type === 'hit') {
+                const { color, shape, weapon } = message
+                handleHit(session, session.players[username], color, shape, weapon)
+            } else if (type === 'startGame') {
+                session.state = 'game'
+                session.timeLeft = 120
+                sendToClients(session, JSON.stringify({
+                    type: 'startGame',
+                    playerList: getPlayerList(session)
+                }), true, true)
+            }
+        })
 
         ws.on('close', () => {
             console.info(`Player ${username} disconnected from session ${sessionId}`)
 
-            // check if should close session
-            if (Object.keys(session.players).length === 1) {
-                delete appData.sessions[sessionId]
-                console.info(`Session ${sessionId} closed`)
-
-                sendToClients(session, JSON.stringify({
-                    type: 'sessionClose'
-                }), false, true)
-                return
-            }
-
             // remove player from session
             delete session.players[username]
+
+            // check if admin left
+            if (session.admin === username) {
+                session.admin = (Object.keys(session.players).length > 0) ? Object.keys(session.players)[0] : null // pick new admin
+            }
 
             // send player quit message
             sendToClients(session, JSON.stringify({
@@ -126,38 +203,60 @@ wss.on('connection', (ws, req) => {
             }), true, true)
             sendToClients(session, JSON.stringify({
                 type: 'playerListUpdate',
+                admin: session.admin,
                 playerList: getPlayerList(session)
             }), true, true)
-
-            // check if admin left
-            if (session.admin === username) {
-                let newAdminUsername = Object.keys(session.players)[0] // pick new admin
-                session.admin = newAdminUsername
-
-                sendToClients(session, JSON.stringify({
-                    type: 'adminChange',
-                    username: newAdminUsername
-                }), true, true)
-            }
         })
     }
-
-    ws.on('message', message => {
-        try {
-            message = JSON.parse(message)
-        } catch (error) {
-            console.error(`Error processing message from client:`, error)
-            return
-        }
-
-        // TODO: handle client messages
-    })
 })
 
-function startWebocket() {
-    server.listen(PORT, () => {
-        console.info(`WebSocket server running on ws://localhost:${PORT}`)
+function handleHit(session, player, color, shape, weapon) {
+    // get target from color
+    let target
+    for (let playerUsername in session.players) {
+        if (session.players[playerUsername].color === color) {
+            target = session.players[playerUsername]
+            break
+        }
+    }
+    if (!target || target.points <= 0) return
+
+    if (shape === 'triangle') {
+        const damages = {
+            pistol: 16,
+            sniper: 32,
+            shotgun: 8
+        }
+        const pointsLost = damages[weapon] ?? 0
+        const pointsGained = pointsLost / 2
+
+        // update points
+        target.points = Math.max(target.points - pointsLost, 0)
+        player.points = player.points + pointsGained
+
+        sendToClients(session, JSON.stringify({
+            type: 'hit',
+            player: player.username,
+            target: target.username,
+            weapon
+        }), true, true)
+
+        if (target.points <= 0) {
+            sendToClients(session, JSON.stringify({
+                type: 'elimination',
+                player: target.username,
+                weapon
+            }), true, true)
+        }
+    } else if (shape === 'rectangle') {
+        // TODO: powerups
+    }
+}
+
+function start(port) {
+    server.listen(port, () => {
+        console.info(`WebSocket server running on port ${port}`)
     })
 }
 
-module.exports = startWebocket
+module.exports = { start }

@@ -15,7 +15,9 @@ const SpectatorLobby = () => {
 
   useEffect(() => {
     // Use the correct WebSocket URL for spectators with a default gameCode
-    const socket = new WebSocket(`ws://localhost:4000/session/${gameCode}/spectator`);
+    const socket = new WebSocket(
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}/spectator`
+    );
     socketRef.current = socket;
 
     // Initial dummy data with weapon and boosts
@@ -76,7 +78,7 @@ const SpectatorLobby = () => {
       console.log("Message received:", event.data);
       const data = JSON.parse(event.data);
       if (data.type === "playerListUpdate") {
-        setPlayers(data.playerList.map(name => ({ name })));
+        setPlayers(data.playerList.map((name) => ({ name })));
       } else if (data.type === "playerStatsUpdate") {
         setPlayers((prevPlayers) =>
           prevPlayers.map((player) => {
@@ -144,7 +146,12 @@ const SpectatorLobby = () => {
   const handleBoost = () => {
     setPlayers((prevPlayers) =>
       prevPlayers.map((player) => {
-        const boosts = { increaseDamage: false, unlimitedBullets: false, zoom: false, grenade: 0 };
+        const boosts = {
+          increaseDamage: false,
+          unlimitedBullets: false,
+          zoom: false,
+          grenade: 0,
+        };
         const activeBoosts = [
           player.increaseDamage,
           player.unlimitedBullets,
@@ -154,15 +161,30 @@ const SpectatorLobby = () => {
 
         if (activeBoosts === 0) {
           // Activate a random boost if none are active
-          const boostType = ["increaseDamage", "unlimitedBullets", "zoom"][Math.floor(Math.random() * 3)];
+          const boostType = ["increaseDamage", "unlimitedBullets", "zoom"][
+            Math.floor(Math.random() * 3)
+          ];
           boosts[boostType] = true;
           boosts.grenade = Math.floor(Math.random() * 3);
         } else {
           // Change to a different random boost
-          const availableBoosts = ["increaseDamage", "unlimitedBullets", "zoom"].filter(
-            (b) => b !== (player.increaseDamage ? "increaseDamage" : player.unlimitedBullets ? "unlimitedBullets" : player.zoom ? "zoom" : "")
+          const availableBoosts = [
+            "increaseDamage",
+            "unlimitedBullets",
+            "zoom",
+          ].filter(
+            (b) =>
+              b !==
+              (player.increaseDamage
+                ? "increaseDamage"
+                : player.unlimitedBullets
+                ? "unlimitedBullets"
+                : player.zoom
+                ? "zoom"
+                : "")
           );
-          const newBoost = availableBoosts[Math.floor(Math.random() * availableBoosts.length)];
+          const newBoost =
+            availableBoosts[Math.floor(Math.random() * availableBoosts.length)];
           boosts[newBoost] = true;
           boosts.grenade = Math.floor(Math.random() * 3);
         }
@@ -206,7 +228,12 @@ const SpectatorLobby = () => {
           textAlign: "center",
         }}
       >
-        <p>Time: {currentTime.toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg" })}</p>
+        <p>
+          Time:{" "}
+          {currentTime.toLocaleString("en-ZA", {
+            timeZone: "Africa/Johannesburg",
+          })}
+        </p>
       </div>
       <div
         style={{
@@ -232,7 +259,8 @@ const SpectatorLobby = () => {
           style={{
             flex: 1,
             padding: "0.5rem",
-            backgroundColor: activeTab === "Leaderboard" ? "#4b0082" : "#6a0dad",
+            backgroundColor:
+              activeTab === "Leaderboard" ? "#4b0082" : "#6a0dad",
             border: "none",
             color: "#fff",
             cursor: "pointer",
@@ -327,7 +355,13 @@ const SpectatorLobby = () => {
           }}
         >
           {players.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
               {/* Header Row */}
               <div
                 style={{
