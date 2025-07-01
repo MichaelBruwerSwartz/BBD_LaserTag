@@ -218,10 +218,10 @@ wss.on('connection', (ws, req) => {
     }
 })
 
-function startWebocket(port) {
+function start(port) {
     server.listen(port, () => {
         console.info(`WebSocket server running on port ${port}`)
     })
 }
 
-module.exports = startWebocket
+module.exports = { start }
