@@ -19,7 +19,7 @@ export default function PlayerLobby() {
     console.log(username);
 
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}`
+      `https://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}`
     );
     socketRef.current = socket;
 
