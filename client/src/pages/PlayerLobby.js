@@ -7,7 +7,7 @@ export default function PlayerLobby() {
   const socketRef = useRef(null);
 
   const { state } = useLocation();
-  const { gameCode, username } = state || {};
+  const { gameCode, username } = state ?? {};
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,16 +21,19 @@ export default function PlayerLobby() {
 
     console.log("WebSocket initialized", socket);
 
+    let navigatingToSpectator = false
+
     socket.onmessage = (event) => {
+      if (navigatingToSpectator) return;
+
       const data = JSON.parse(event.data);
       console.log("Message received:", data);
+
       if (data.type === "playerListUpdate") {
         console.log("THIS IS THE PLAYERLIST", data.playerList);
         setPlayers(data.playerList);
         setAdminUsername(data.admin);
-      }
-      if (data.type === "startGame") {
-        console.log(data)
+      } else if (data.type === "startGame") {
         const currentPlayer = data.playerList.find((p) => p.username === username);
         console.log("Navigating with player color", currentPlayer?.color);
 
@@ -40,6 +43,13 @@ export default function PlayerLobby() {
             gameCode,
             color: currentPlayer?.color,
           },
+        });
+      } else if (data.type === "gameUpdate") {
+        // if this is received, it means the game has started -> navigate to spectator view
+        navigatingToSpectator = true
+        alert("The game has already started, you will be taken to the spectator view.");
+        navigate("/spectator_lobby", {
+          state: { gameCode },
         });
       }
     };
