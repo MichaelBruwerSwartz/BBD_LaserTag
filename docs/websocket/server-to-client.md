@@ -42,3 +42,7 @@ Sent to **players and spectators** when a user leaves a session.
 ### `sessionClose`
 
 Sent to **spectators** when a session is closed.
+
+### `startGame`
+
+Sent to **players and spectators** (including the session admin) after an admin starts a game.

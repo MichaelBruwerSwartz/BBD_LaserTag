@@ -2,9 +2,13 @@
 
 ## Connecting
 
-**For players:** Client must connect to `ws://localhost:4000/session/<session_id>?username=<player_username>`
+**For players:** Client must connect to `ws://localhost:4000/session/<session_id>?color=<player_color>&username=<player_username>`
 
-**For spectators:** Client must connect to `ws://localhost:4000/session/<session_id>/spectator?username=<player_username>`
+Where:
+- **username** is required and
+- **color** is optional
+
+**For spectators:** Client must connect to `ws://localhost:4000/session/<session_id>/spectator`
 
 ## Sending Data
 
