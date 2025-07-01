@@ -5,7 +5,8 @@ const morgan = require('morgan')
 const websocket = require('./websocket')
 const router = require('./routes/index')
 
-const PORT = 3000
+const PORT = 4000
+const WEBSOCKET_PORT = 5000
 
 const app = express()
 
@@ -27,4 +28,4 @@ app.listen(PORT, () => {
 })
 
 // start websocket
-websocket()
+websocket(WEBSOCKET_PORT)

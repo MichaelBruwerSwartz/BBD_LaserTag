@@ -4,8 +4,6 @@ const { randomUUID } = require('crypto')
 const { parse } = require('url')
 const appData = require('./app-data')
 
-const PORT = 4000
-
 const server = http.createServer()
 const wss = new WebSocket.Server({ server })
 
@@ -66,7 +64,7 @@ wss.on('connection', (ws, req) => {
             delete session.spectators[id]
         })
     } else {
-        const { username } = query
+        let { username } = query
 
         if (!username || username.trim() === '') {
             ws.close(1000, 'Username is required')
@@ -154,9 +152,9 @@ wss.on('connection', (ws, req) => {
     })
 })
 
-function startWebocket() {
-    server.listen(PORT, () => {
-        console.info(`WebSocket server running on ws://localhost:${PORT}`)
+function startWebocket(port) {
+    server.listen(port, () => {
+        console.info(`WebSocket server running on port ${port}`)
     })
 }
 
