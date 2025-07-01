@@ -68,11 +68,16 @@ setInterval(() => {
         }
         if (session.state === 'game') {
             session.timeLeft -= 1
+
             sendToClients(session, JSON.stringify({
                 type: 'gameUpdate',
                 timeLeft: session.timeLeft,
                 players: Object.fromEntries(Object.entries(session.players).map(([username, player]) => [username, player.points]))
             }), true, true)
+
+            if (session.timeLeft <= 0) {
+                session.state = 'finished'
+            }
         }
     }
 }, 1000)

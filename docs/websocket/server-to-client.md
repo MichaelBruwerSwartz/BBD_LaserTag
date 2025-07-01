@@ -18,10 +18,6 @@ Sent to **players and spectators** when a player is eliminated.
 
 - `player` - username of player who was eliminated
 
-### `endGame`
-
-Sent to **players and spectators** when the game ends.
-
 ### `gameUpdate`
 
 Sent to **players and spectators** every second and contains all game information.
