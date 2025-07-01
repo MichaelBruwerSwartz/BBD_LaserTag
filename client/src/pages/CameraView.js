@@ -1,5 +1,6 @@
 /* global cv */
 import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function CameraView() {
   const videoRef = useRef(null);
@@ -14,11 +15,11 @@ export default function CameraView() {
     r /= 255;
     g /= 255;
     b /= 255;
-    
+
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
-    
+
     let h = 0;
     if (delta === 0) {
       h = 0;
@@ -29,18 +30,18 @@ export default function CameraView() {
     } else {
       h = (r - g) / delta + 4;
     }
-    
+
     h = Math.round(h * 60);
     if (h < 0) h += 360;
-    
+
     const s = max === 0 ? 0 : delta / max;
     const v = max;
-    
+
     // Classify based on HSV values
     if (v < 0.2) return "black";
     if (s < 0.1 && v > 0.8) return "white";
     if (s < 0.2) return "gray";
-    
+
     if (h < 15 || h > 345) return "red";
     if (h >= 15 && h < 45) return "orange";
     if (h >= 45 && h < 75) return "yellow";
@@ -72,7 +73,7 @@ export default function CameraView() {
     // Convert to grayscale and apply preprocessing
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     cv.GaussianBlur(gray, processed, new cv.Size(7, 7), 1.5);
-    
+
     // Use adaptive thresholding for better binarization
     cv.adaptiveThreshold(
       processed,
@@ -83,11 +84,14 @@ export default function CameraView() {
       11,
       2
     );
-    
+
     // Morphological operations to clean up noise
-    const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3, 3));
+    const kernel = cv.getStructuringElement(
+      cv.MORPH_ELLIPSE,
+      new cv.Size(3, 3)
+    );
     cv.morphologyEx(processed, processed, cv.MORPH_CLOSE, kernel);
-    
+
     // Find contours
     cv.findContours(
       processed,
@@ -113,32 +117,35 @@ export default function CameraView() {
       // Use more precise approximation for triangles
       cv.approxPolyDP(cnt, approx, 0.015 * perimeter, true);
       const vertices = approx.rows;
-      
+
       // Calculate solidity to distinguish irregular shapes
       const hull = new cv.Mat();
       cv.convexHull(cnt, hull);
       const hullArea = cv.contourArea(hull);
       const solidity = hullArea > 0 ? area / hullArea : 0;
-      
+
       let shape = "";
       if (vertices === 3) {
         // Triangle detection with additional validation
-        const triangleAspectRatio = Math.max(
-          cv.boundingRect(approx).width,
-          cv.boundingRect(approx).height
-        ) / Math.min(
-          cv.boundingRect(approx).width,
-          cv.boundingRect(approx).height
-        );
-        
+        const triangleAspectRatio =
+          Math.max(
+            cv.boundingRect(approx).width,
+            cv.boundingRect(approx).height
+          ) /
+          Math.min(
+            cv.boundingRect(approx).width,
+            cv.boundingRect(approx).height
+          );
+
         if (solidity > 0.85 && triangleAspectRatio < 2.5) {
           shape = "Triangle";
         }
       } else if (vertices === 4) {
         // Check for rectangles vs squares
         const rect = cv.minAreaRect(cnt);
-        const aspectRatio = Math.max(rect.size.width, rect.size.height) / 
-                           Math.min(rect.size.width, rect.size.height);
+        const aspectRatio =
+          Math.max(rect.size.width, rect.size.height) /
+          Math.min(rect.size.width, rect.size.height);
         shape = aspectRatio > 1.2 ? "Rectangle" : "Square";
       }
 
@@ -146,19 +153,19 @@ export default function CameraView() {
         // Create mask for the current contour
         const mask = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
         cv.drawContours(mask, contours, i, new cv.Scalar(255), -1);
-        
+
         // Calculate mean color within the contour
         const meanColor = cv.mean(src, mask);
         mask.delete();
-        
+
         // Extract RGB components
         const r = Math.round(meanColor[0]);
         const g = Math.round(meanColor[1]);
         const b = Math.round(meanColor[2]);
-        
+
         // Get color name
         const colorName = getColorName(r, g, b);
-        
+
         // Draw contour
         ctx.strokeStyle = "lime";
         ctx.lineWidth = 3;
