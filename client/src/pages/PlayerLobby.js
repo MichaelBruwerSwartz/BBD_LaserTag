@@ -33,14 +33,15 @@ export default function PlayerLobby() {
         setAdminUsername(data.admin);
       }
       if (data.type === "startGame") {
-        const currentPlayer = players.find((p) => p.username === username);
+        console.log(data)
+        const currentPlayer = data.playerList.find((p) => p.username === username);
         console.log("Navigating with player color", currentPlayer?.color);
 
         navigate("/camera_view", {
           state: {
             username,
             gameCode,
-            color: currentPlayer?.color || "#fff",
+            color: currentPlayer?.color || "blue",
           },
         });
       }

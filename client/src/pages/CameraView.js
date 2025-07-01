@@ -23,6 +23,7 @@ export default function CameraView() {
       return;
     }
 
+    console.log(username, gameCode, color)
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
     );

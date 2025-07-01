@@ -174,7 +174,8 @@ wss.on('connection', (ws, req) => {
                 session.state = 'game'
                 session.timeLeft = 120
                 sendToClients(session, JSON.stringify({
-                    type: 'startGame'
+                    type: 'startGame',
+                    playerList: getPlayerList(session)
                 }), true, true)
             }
         })
