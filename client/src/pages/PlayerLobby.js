@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 export default function PlayerLobby() {
   const [players, setPlayers] = useState([]);
   const [adminUsername, setAdminUsername] = useState("");
-  const [userColor, setUserColor] = useState("");
   const socketRef = useRef(null);
 
   const { state } = useLocation();
@@ -27,16 +26,16 @@ export default function PlayerLobby() {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      console.log("Message received:", data);
       if (data.type === "playerListUpdate") {
         console.log("THIS IS THE PLAYERLIST" + data.playerList);
         setPlayers(data.playerList);
         setAdminUsername(data.admin);
       }
       if (data.type === "startGame") {
-        const currentPlayer = data.playerList?.find(
-          (p) => p.username === username
-        );
-        setUserColor(currentPlayer?.color);
+        const currentPlayer = players.find((p) => p.username === username);
+        console.log("Navigating with player color", currentPlayer?.color);
+
         navigate("/camera_view", {
           state: {
             username,
@@ -66,14 +65,6 @@ export default function PlayerLobby() {
         })
       );
     }
-
-    navigate("/camera_view", {
-      state: {
-        username,
-        gameCode,
-        color: userColor,
-      },
-    });
   };
 
   return (
@@ -150,7 +141,6 @@ export default function PlayerLobby() {
             fontWeight: "bold",
           }}
           onClick={() => {
-            console.log("Game start triggered by admin");
             handleStartGame();
           }}
         >
