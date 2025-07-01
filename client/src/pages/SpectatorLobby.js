@@ -4,27 +4,106 @@ import { useLocation } from "react-router-dom";
 const SpectatorLobby = () => {
   const [players, setPlayers] = useState([]);
   const [activeTab, setActiveTab] = useState("Players");
+  const [currentTime, setCurrentTime] = useState(new Date());
   const socketRef = useRef(null);
 
   const { state } = useLocation();
-  const { gameCode, username } = state || { gameCode: "", username: "" };
+  const { gameCode, username } = state || { gameCode: "123", username: "" }; // Default gameCode to "123"
+
+  // List of possible weapons
+  const weapons = ["Pistol", "Rifle", "Shotgun", "Sniper", "SMG"];
 
   useEffect(() => {
-    // Use the correct WebSocket URL for spectators
+    // Use the correct WebSocket URL for spectators with a default gameCode
     const socket = new WebSocket(`ws://localhost:4000/session/${gameCode}/spectator`);
     socketRef.current = socket;
 
+    // Initial dummy data with weapon and boosts
+    const dummyPlayerList = [
+      { name: "Player1" },
+      { name: "Player2" },
+      { name: "Player3" },
+    ];
+    setPlayers(dummyPlayerList);
+
+    // Simulate initial stats update with weapon and boosts
+    setTimeout(() => {
+      setPlayers((prevPlayers) =>
+        prevPlayers.map((player) => ({
+          ...player,
+          points: Math.floor(Math.random() * 100),
+          weapon: weapons[Math.floor(Math.random() * weapons.length)],
+          increaseDamage: Math.random() > 0.5,
+          unlimitedBullets: Math.random() > 0.7,
+          zoom: Math.random() > 0.6,
+          grenade: Math.floor(Math.random() * 3),
+        }))
+      );
+    }, 1000);
+
+    // Refresh data every 5 seconds
+    const refreshInterval = setInterval(() => {
+      setPlayers((prevPlayers) =>
+        prevPlayers.map((player) => {
+          const boosts = {
+            increaseDamage: Math.random() > 0.5,
+            unlimitedBullets: Math.random() > 0.7,
+            zoom: Math.random() > 0.6,
+            grenade: Math.floor(Math.random() * 3),
+          };
+          const activeBoost = boosts.increaseDamage
+            ? "Increase Damage"
+            : boosts.unlimitedBullets
+            ? "Unlimited Bullets"
+            : boosts.zoom
+            ? "Zoom"
+            : boosts.grenade > 0
+            ? `Grenade (${boosts.grenade})`
+            : "None";
+          return {
+            ...player,
+            points: Math.floor(Math.random() * 100),
+            weapon: weapons[Math.floor(Math.random() * weapons.length)],
+            ...boosts,
+            activeBoost,
+          };
+        })
+      );
+      setCurrentTime(new Date()); // Update current time
+    }, 5000);
+
     socket.onmessage = (event) => {
+      console.log("Message received:", event.data);
       const data = JSON.parse(event.data);
       if (data.type === "playerListUpdate") {
-        setPlayers(data.playerList || []);
+        setPlayers(data.playerList.map(name => ({ name })));
       } else if (data.type === "playerStatsUpdate") {
         setPlayers((prevPlayers) =>
-          prevPlayers.map((player) => ({
-            ...player,
-            points: data.stats[player.name]?.points || 0,
-            deaths: data.stats[player.name]?.deaths || 0,
-          }))
+          prevPlayers.map((player) => {
+            const stats = data.stats[player.name] || {};
+            const boosts = {
+              increaseDamage: stats.increaseDamage || false,
+              unlimitedBullets: stats.unlimitedBullets || false,
+              zoom: stats.zoom || false,
+              grenade: stats.grenade || 0,
+            };
+            const activeBoost = boosts.increaseDamage
+              ? "Increase Damage"
+              : boosts.unlimitedBullets
+              ? "Unlimited Bullets"
+              : boosts.zoom
+              ? "Zoom"
+              : boosts.grenade > 0
+              ? `Grenade (${boosts.grenade})`
+              : "None";
+            return {
+              ...player,
+              points: stats.points || 0,
+              weapon: stats.weapon || "Pistol",
+              ...boosts,
+              activeBoost,
+            };
+          })
         );
       }
     };
@@ -41,13 +120,71 @@ const SpectatorLobby = () => {
       console.log("Spectator WebSocket disconnected");
     };
 
-    // Remove test data simulation since we’re using a real WebSocket
-    // The server will handle the initial data
+    // Update time every second
+    const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
 
     return () => {
       socket.close();
+      clearInterval(refreshInterval);
+      clearInterval(timeInterval);
     };
   }, [gameCode]);
+
+  // Handle Shuffle button click
+  const handleShuffle = () => {
+    setPlayers((prevPlayers) =>
+      prevPlayers.map((player) => ({
+        ...player,
+        weapon: weapons[Math.floor(Math.random() * weapons.length)],
+      }))
+    );
+  };
+
+  // Handle Boost button click
+  const handleBoost = () => {
+    setPlayers((prevPlayers) =>
+      prevPlayers.map((player) => {
+        const boosts = { increaseDamage: false, unlimitedBullets: false, zoom: false, grenade: 0 };
+        const activeBoosts = [
+          player.increaseDamage,
+          player.unlimitedBullets,
+          player.zoom,
+          player.grenade > 0,
+        ].filter(Boolean).length;
+
+        if (activeBoosts === 0) {
+          // Activate a random boost if none are active
+          const boostType = ["increaseDamage", "unlimitedBullets", "zoom"][Math.floor(Math.random() * 3)];
+          boosts[boostType] = true;
+          boosts.grenade = Math.floor(Math.random() * 3);
+        } else {
+          // Change to a different random boost
+          const availableBoosts = ["increaseDamage", "unlimitedBullets", "zoom"].filter(
+            (b) => b !== (player.increaseDamage ? "increaseDamage" : player.unlimitedBullets ? "unlimitedBullets" : player.zoom ? "zoom" : "")
+          );
+          const newBoost = availableBoosts[Math.floor(Math.random() * availableBoosts.length)];
+          boosts[newBoost] = true;
+          boosts.grenade = Math.floor(Math.random() * 3);
+        }
+
+        const activeBoost = boosts.increaseDamage
+          ? "Increase Damage"
+          : boosts.unlimitedBullets
+          ? "Unlimited Bullets"
+          : boosts.zoom
+          ? "Zoom"
+          : boosts.grenade > 0
+          ? `Grenade (${boosts.grenade})`
+          : "None";
+
+        return {
+          ...player,
+          ...boosts,
+          activeBoost,
+        };
+      })
+    );
+  };
 
   return (
     <div
@@ -61,6 +198,16 @@ const SpectatorLobby = () => {
         fontFamily: "Arial, sans-serif",
       }}
     >
+      <div
+        style={{
+          width: "100%",
+          padding: "0.5rem",
+          backgroundColor: "#4b0082",
+          textAlign: "center",
+        }}
+      >
+        <p>Time: {currentTime.toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg" })}</p>
+      </div>
       <div
         style={{
           display: "flex",
@@ -181,19 +328,37 @@ const SpectatorLobby = () => {
         >
           {players.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {/* Header Row */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                  alignItems: "center",
+                  backgroundColor: "#4682b4",
+                  color: "#fff",
+                  padding: "0.5rem",
+                  borderRadius: "20px 20px 0 0",
+                  fontWeight: "bold",
+                }}
+              >
+                <span>Player Name</span>
+                <span>Points</span>
+                <span>Active Boost</span>
+                <span>Weapon</span>
+              </div>
+              {/* Data Rows */}
               {players
                 .map((player) => ({
                   ...player,
                   points: player.points || 0,
-                  deaths: player.deaths || 0,
                 }))
                 .sort((a, b) => b.points - a.points)
                 .map((player, index) => (
                   <div
                     key={index}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr 1fr",
                       alignItems: "center",
                       backgroundColor: "#87ceeb",
                       color: "#000",
@@ -203,17 +368,8 @@ const SpectatorLobby = () => {
                   >
                     <span style={{ fontWeight: "bold" }}>{player.name}</span>
                     <span>{player.points}</span>
-                    <span style={{ display: "flex", alignItems: "center" }}>
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        style={{ fill: "none", stroke: "red", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }}
-                      >
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                      </svg>
-                      {player.deaths}
-                    </span>
+                    <span>{player.activeBoost}</span>
+                    <span>{player.weapon}</span>
                   </div>
                 ))}
             </div>
@@ -234,6 +390,7 @@ const SpectatorLobby = () => {
             border: "none",
             cursor: "pointer",
           }}
+          onClick={handleShuffle}
         >
           Shuffle
         </button>
@@ -247,6 +404,7 @@ const SpectatorLobby = () => {
             border: "none",
             cursor: "pointer",
           }}
+          onClick={handleBoost}
         >
           Boost
         </button>
