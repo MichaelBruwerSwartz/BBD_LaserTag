@@ -1,11 +1,20 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function LandingPage() {
   const [gameCode, setGameCode] = useState("");
   const [username, setUsername] = useState("");
   const navigate = useNavigate();
+
+  const { state } = useLocation();
+
+  useEffect(() => {
+    if (state) {
+      setGameCode(state.gameCode || "");
+      setUsername(state.username || "");
+    }
+  }, [state]);
 
   const joinPlayerLobby = () => {
     navigate("/player_lobby", {
@@ -102,7 +111,7 @@ export default function LandingPage() {
         <input
           type="text"
           value={gameCode}
-          onChange={(e) => setGameCode(e.target.value)}
+          onChange={(e) => setGameCode(e.target.value.replace(/[^a-zA-Z]/g, '').toLocaleLowerCase())}
           placeholder="Game Code"
           style={{
             padding: "0.5rem 1rem",

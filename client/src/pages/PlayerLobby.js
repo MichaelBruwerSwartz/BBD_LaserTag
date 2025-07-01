@@ -12,10 +12,7 @@ export default function PlayerLobby() {
 
   useEffect(() => {
     if (!gameCode || !username) return;
-
     if (socketRef.current) return;
-    console.log(gameCode);
-    console.log(username);
 
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}`
@@ -72,82 +69,153 @@ export default function PlayerLobby() {
     <div
       style={{
         padding: "2rem",
-        backgroundColor: "#121212",
+        backgroundColor: "#0f0f0f",
         minHeight: "100vh",
         color: "#ffffff",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        gap: "1.5rem",
       }}
     >
-      <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>
-        Game Code: <span style={{ color: "#00bfff" }}>{gameCode}</span>
-      </h1>
-      <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>
-        You are: <span style={{ color: "#00bfff" }}>{username}</span>
-      </h1>
+      <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+        <h1 style={{
+          fontSize: "2rem",
+          margin: "0 0 0.5rem 0",
+          fontWeight: "600"
+        }}>
+          Game Code: <span style={{ color: "#3b82f6" }}>{gameCode}</span>
+        </h1>
+        <h2 style={{
+          fontSize: "1.25rem",
+          margin: "0",
+          fontWeight: "400",
+          color: "#d1d5db"
+        }}>
+          You are: <span style={{ color: "#3b82f6", fontWeight: "500" }}>{username}</span>
+        </h2>
+      </div>
 
-      <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
-        Players in Lobby:
-      </h2>
+      <div style={{ width: "100%", maxWidth: "500px" }}>
+        <h3 style={{
+          fontSize: "1.25rem",
+          marginBottom: "1rem",
+          textAlign: "center",
+          fontWeight: "500",
+          color: "#f3f4f6"
+        }}>
+          Players in Lobby
+        </h3>
 
-      {players.length > 0 ? (
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            width: "100%",
-            maxWidth: "400px",
-          }}
-        >
-          {players.map(({ username: playerName, color }) => (
-            <li
-              key={playerName}
-              style={{
-                backgroundColor: color || "#ddd",
-                color: "white",
-                padding: "0.75rem 1rem",
-                marginBottom: "0.5rem",
-                borderRadius: "8px",
-                fontWeight: playerName === username ? "bold" : "normal",
-                border:
-                  playerName === username ? "2px solid #000" : "1px solid #444",
-                textAlign: "center",
-              }}
-            >
-              {playerName}
-              {playerName === adminUsername && (
-                <span style={{ marginLeft: "0.5rem", fontWeight: "bold" }}>
-                  👑
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p style={{ color: "#888" }}>No players yet...</p>
-      )}
-      {adminUsername === username && (
-        <button
-          style={{
-            marginTop: "1.5rem",
-            padding: "0.75rem 1.5rem",
+        {players.length > 0 ? (
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              margin: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem",
+            }}
+          >
+            {players.map(({ username: playerName, color }) => (
+              <li
+                key={playerName}
+                style={{
+                  backgroundColor: color || "#374151",
+                  color: "#ffffff",
+                  padding: "1rem 1.25rem",
+                  borderRadius: "12px",
+                  fontWeight: playerName === username ? "600" : "400",
+                  border: playerName === username ? "2px solid gray" : "1px solid #4b5563",
+                  textAlign: "center",
+                  fontSize: "1rem",
+                  boxShadow: playerName === username ? "0 0 0 1px rgba(59, 130, 246, 0.3)" : "none",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {playerName}
+                {playerName === adminUsername && (
+                  <span style={{
+                    marginLeft: "0.5rem",
+                    fontSize: "1.1em",
+                    filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+                  }}>
+                    👑
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p style={{
+            color: "#9ca3af",
+            textAlign: "center",
             fontSize: "1rem",
-            borderRadius: "5px",
-            backgroundColor: "#00ff88",
-            border: "none",
-            cursor: "pointer",
-            color: "#000",
-            fontWeight: "bold",
+            fontStyle: "italic"
+          }}>
+            Loading players...
+          </p>
+        )}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '1rem',
+          marginTop: "1rem",
+        }}
+      >
+        <button
+          onClick={() => navigate('/', { state: { username, gameCode } })}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#6b7280',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
           }}
-          onClick={() => {
-            handleStartGame();
-          }}
+          onMouseOver={e => e.target.style.backgroundColor = '#4b5563'}
+          onMouseOut={e => e.target.style.backgroundColor = '#6b7280'}
         >
-          Start Game
+          Back
         </button>
-      )}
+
+        {adminUsername === username && (
+          <button
+            style={{
+              padding: "0.75rem 1.5rem",
+              fontSize: "1rem",
+              fontWeight: "600",
+              borderRadius: "8px",
+              backgroundColor: "#10b981",
+              color: "#ffffff",
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)",
+            }}
+            onMouseOver={e => {
+              e.target.style.backgroundColor = "#059669";
+              e.target.style.boxShadow = "0 4px 8px rgba(16, 185, 129, 0.3)";
+            }}
+            onMouseOut={e => {
+              e.target.style.backgroundColor = "#10b981";
+              e.target.style.boxShadow = "0 2px 4px rgba(16, 185, 129, 0.2)";
+            }}
+            onClick={() => {
+              handleStartGame();
+            }}
+          >
+            Start Game
+          </button>
+        )}
+      </div>
     </div>
   );
 }
