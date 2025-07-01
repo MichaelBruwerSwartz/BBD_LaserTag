@@ -78,6 +78,7 @@ setInterval(() => {
 }, 1000)
 
 wss.on('connection', (ws, req) => {
+    console.log('CONNECTION FROM CLIENT!!')
     const { pathname, query } = parse(req.url, true)
     const pathnameParts = pathname.split('/')
 
