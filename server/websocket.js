@@ -190,12 +190,8 @@ wss.on('connection', (ws, req) => {
 
             if (!target) return
 
+            // update points
             target.points = Math.max(target.points - 10, 0)
-
-            if (target.points <= 0) {
-                // TODO: target died
-            }
-
             player.points = player.points + 5
 
             sendToClients(session, JSON.stringify({
@@ -204,6 +200,13 @@ wss.on('connection', (ws, req) => {
                 target: targetUsername,
                 weapon
             }), true, true)
+
+            if (target.points <= 0) {
+                sendToClients(session, JSON.stringify({
+                    type: 'elimination',
+                    player: username,
+                }), true, true)
+            }
         } else if (type === 'startGame') {
             session.state = 'game'
             sendToClients(session, JSON.stringify({
