@@ -63,3 +63,7 @@ Sent to **spectators** when a session is closed.
 ### `startGame`
 
 Sent to **players and spectators** (including the session admin) after an admin starts a game.
+
+- `playerList` - object with player information
+  - key: player username
+  - value: player color

@@ -9,12 +9,23 @@ export default function CameraView() {
   const [gunType, setGunType] = useState("pistol");
   const [zoomEnabled, setZoomEnabled] = useState(false);
 
-  //Game Details
-  //const [gameTime, setGameTime] = useState(0);
+  // Game Details
+  /*
+    TODO:
+    leaderboard: username, points
+    gameTime
+    powerup icons?
+  */
   const [gameTimeString, setGameTimeString] = useState("00:00");
 
   const location = useLocation();
   const { username, gameCode, color } = location.state || {};
+
+  // leaderboard logic
+  const [leaderboardData, setLeaderboardData] = useState({});
+  const sortedPlayers = Object.entries(leaderboardData || {})
+    .map(([username, points]) => ({ username, points }))
+    .sort((a, b) => b.points - a.points);
 
   const socketRef = useRef(null);
   useEffect(() => {
@@ -23,7 +34,6 @@ export default function CameraView() {
       return;
     }
 
-    console.log(username, gameCode, color)
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
     );
@@ -35,17 +45,16 @@ export default function CameraView() {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Message from server:", data);
+      console.log("Received message from server:", data);
 
       // Add logic here for in-game updates
       if (data.type === "gameUpdate") {
-        console.log(data);
-        console.log("THIS IS THE TIME LEFT SENT" + data.timeLeft);
         const mins = Math.floor(data.timeLeft / 60);
-        const secs = data.timeLeft % 60; // <-- corrected variable name
+        const secs = data.timeLeft % 60;
         setGameTimeString(
           `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
         );
+        setLeaderboardData(data.players);
       }
     };
 
@@ -124,26 +133,26 @@ export default function CameraView() {
   function processVideoOnce(video, canvas) {
     const width = video.videoWidth;
     const height = video.videoHeight;
-  
+
     if (!width || !height) return;
-  
+
     canvas.width = width;
     canvas.height = height;
-  
+
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, width, height);
     const imageData = ctx.getImageData(0, 0, width, height);
-  
+
     const src = cv.matFromImageData(imageData);
     const gray = new cv.Mat();
     const processed = new cv.Mat();
     const contours = new cv.MatVector();
     const hierarchy = new cv.Mat();
-  
+
     // Convert to grayscale and apply preprocessing
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     cv.GaussianBlur(gray, processed, new cv.Size(7, 7), 1.5);
-  
+
     // Use adaptive thresholding for better binarization
     cv.adaptiveThreshold(
       processed,
@@ -154,14 +163,14 @@ export default function CameraView() {
       11,
       2
     );
-  
+
     // Morphological operations to clean up noise
     const kernel = cv.getStructuringElement(
       cv.MORPH_ELLIPSE,
       new cv.Size(3, 3)
     );
     cv.morphologyEx(processed, processed, cv.MORPH_CLOSE, kernel);
-  
+
     // Find contours
     cv.findContours(
       processed,
@@ -170,32 +179,32 @@ export default function CameraView() {
       cv.RETR_TREE,
       cv.CHAIN_APPROX_SIMPLE
     );
-  
+
     // Center point of canvas to check for reticle
     const centerX = width / 2;
     const centerY = height / 2;
-  
+
     // Process contours
     for (let i = 0; i < contours.size(); ++i) {
       const cnt = contours.get(i);
       const area = cv.contourArea(cnt);
       const perimeter = cv.arcLength(cnt, true);
-  
+
       // Filter small contours and noise
       if (area < 100 || perimeter < 30) {
         cnt.delete();
         continue;
       }
-  
+
       const approx = new cv.Mat();
       cv.approxPolyDP(cnt, approx, 0.015 * perimeter, true);
       const vertices = approx.rows;
-  
+
       const hull = new cv.Mat();
       cv.convexHull(cnt, hull);
       const hullArea = cv.contourArea(hull);
       const solidity = hullArea > 0 ? area / hullArea : 0;
-  
+
       let shape = "";
       if (vertices === 3) {
         // Triangle detection with additional validation
@@ -218,13 +227,13 @@ export default function CameraView() {
           const circleArea = Math.PI * Math.pow(Math.sqrt(area / Math.PI), 2);
           const circularity = (4 * Math.PI * area) / (perimeter * perimeter);
           const areaRatio = Math.abs(area - circleArea) / area;
-          
+
           if (circularity > 0.7 && areaRatio < 0.3 && solidity > 0.8) {
             shape = "Circle";
           }
         }
       }
-  
+
       if (shape) {
         // Check if the center point lies within the contour (reticle inside)
         const dist = cv.pointPolygonTest(
@@ -232,7 +241,7 @@ export default function CameraView() {
           new cv.Point(centerX, centerY),
           false
         );
-  
+
         // Create mask and get color
         const mask = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
         cv.drawContours(mask, contours, i, new cv.Scalar(255), -1);
@@ -242,11 +251,11 @@ export default function CameraView() {
         const g = Math.round(meanColor[1]);
         const b = Math.round(meanColor[2]);
         const colorName = getColorName(r, g, b);
-  
+
         if ((shape === "Triangle" || shape == "Rectangle" || shape == "Sqaure") && dist >= 0) {
           hitDetected(colorName, "Triangle");
         }
-  
+
         // Draw contour
         ctx.strokeStyle = "lime";
         ctx.lineWidth = 3;
@@ -260,7 +269,7 @@ export default function CameraView() {
         }
         ctx.closePath();
         ctx.stroke();
-  
+
         // Draw label
         const moments = cv.moments(cnt);
         if (moments.m00 !== 0) {
@@ -272,12 +281,12 @@ export default function CameraView() {
           ctx.fillText(`${colorName} ${shape}`, cx, cy - 15);
         }
       }
-  
+
       approx.delete();
       hull.delete();
       cnt.delete();
     }
-  
+
     // Clean up memory
     src.delete();
     gray.delete();
@@ -288,7 +297,7 @@ export default function CameraView() {
   }
 
   const handleShoot = () => {
-    console.log(`🔫 Shoot button clicked with ${gunType}!`);
+    console.log(`Shoot button clicked with ${gunType}!`);
     if (navigator.vibrate) {
       navigator.vibrate([75, 25, 75]);
     }
@@ -456,8 +465,8 @@ export default function CameraView() {
             gunType === "shotgun"
               ? "/shotgun.png"
               : gunType === "sniper"
-              ? "/sniper.png"
-              : "/pistol.png"
+                ? "/sniper.png"
+                : "/pistol.png"
           }
           alt="Shoot"
           onClick={handleShoot}
@@ -510,6 +519,102 @@ export default function CameraView() {
           }}
         >
           {gameTimeString}
+        </div>
+      </div>
+
+      {/* leaderboard */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: '#1f2937',
+          border: '2px solid #374151',
+          borderRadius: '12px',
+          padding: '16px',
+          minWidth: '200px',
+          maxHeight: '300px',
+          overflowY: 'auto',
+          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.4)',
+          color: '#ffffff',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontSize: '14px',
+          zIndex: 1000,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '12px',
+            paddingBottom: '8px',
+            borderBottom: '1px solid #4b5563',
+          }}
+        >
+          <span style={{ fontSize: '16px', marginRight: '8px' }}>🏆</span>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#f3f4f6',
+            }}
+          >
+            Leaderboard
+          </h3>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {sortedPlayers.length > 0 ? (
+            sortedPlayers.map((player, index) => (
+              <div
+                key={player.username}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  backgroundColor: index === 0 ? '#fbbf24' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : '#374151',
+                  color: index < 3 ? '#000000' : '#ffffff',
+                  borderRadius: '8px',
+                  fontWeight: index < 3 ? '600' : '400',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      minWidth: '20px',
+                    }}
+                  >
+                    #{index + 1}
+                  </span>
+                  <span style={{ fontWeight: '500' }}>{player.username}</span>
+                </div>
+                <span
+                  style={{
+                    fontWeight: '600',
+                    fontSize: '14px',
+                  }}
+                >
+                  {player.points}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div
+              style={{
+                textAlign: 'center',
+                color: '#9ca3af',
+                fontStyle: 'italic',
+                padding: '16px',
+              }}
+            >
+              No players yet
+            </div>
+          )}
         </div>
       </div>
     </div>

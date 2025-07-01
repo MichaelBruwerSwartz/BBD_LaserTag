@@ -8,7 +8,7 @@ const SpectatorLobby = () => {
   const socketRef = useRef(null);
 
   const { state } = useLocation();
-  const { gameCode, username } = state || { gameCode: "123", username: "" }; // Default gameCode to "123"
+  const { gameCode } = state
 
   // List of possible weapons
   const weapons = ["Pistol", "Rifle", "Shotgun", "Sniper", "SMG"];
@@ -56,12 +56,12 @@ const SpectatorLobby = () => {
           const activeBoost = boosts.increaseDamage
             ? "Increase Damage"
             : boosts.unlimitedBullets
-            ? "Unlimited Bullets"
-            : boosts.zoom
-            ? "Zoom"
-            : boosts.grenade > 0
-            ? `Grenade (${boosts.grenade})`
-            : "None";
+              ? "Unlimited Bullets"
+              : boosts.zoom
+                ? "Zoom"
+                : boosts.grenade > 0
+                  ? `Grenade (${boosts.grenade})`
+                  : "None";
           return {
             ...player,
             points: Math.floor(Math.random() * 100),
@@ -92,12 +92,12 @@ const SpectatorLobby = () => {
             const activeBoost = boosts.increaseDamage
               ? "Increase Damage"
               : boosts.unlimitedBullets
-              ? "Unlimited Bullets"
-              : boosts.zoom
-              ? "Zoom"
-              : boosts.grenade > 0
-              ? `Grenade (${boosts.grenade})`
-              : "None";
+                ? "Unlimited Bullets"
+                : boosts.zoom
+                  ? "Zoom"
+                  : boosts.grenade > 0
+                    ? `Grenade (${boosts.grenade})`
+                    : "None";
             return {
               ...player,
               points: stats.points || 0,
@@ -178,10 +178,10 @@ const SpectatorLobby = () => {
               (player.increaseDamage
                 ? "increaseDamage"
                 : player.unlimitedBullets
-                ? "unlimitedBullets"
-                : player.zoom
-                ? "zoom"
-                : "")
+                  ? "unlimitedBullets"
+                  : player.zoom
+                    ? "zoom"
+                    : "")
           );
           const newBoost =
             availableBoosts[Math.floor(Math.random() * availableBoosts.length)];
@@ -192,12 +192,12 @@ const SpectatorLobby = () => {
         const activeBoost = boosts.increaseDamage
           ? "Increase Damage"
           : boosts.unlimitedBullets
-          ? "Unlimited Bullets"
-          : boosts.zoom
-          ? "Zoom"
-          : boosts.grenade > 0
-          ? `Grenade (${boosts.grenade})`
-          : "None";
+            ? "Unlimited Bullets"
+            : boosts.zoom
+              ? "Zoom"
+              : boosts.grenade > 0
+                ? `Grenade (${boosts.grenade})`
+                : "None";
 
         return {
           ...player,
