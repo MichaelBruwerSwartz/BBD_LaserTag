@@ -127,6 +127,11 @@ wss.on('connection', (ws, req) => {
                 const randomSuffix = Math.floor(Math.random() * 10)
                 username += randomSuffix
             }
+
+            // set admin if no admin exists
+            if (session.admin == null) {
+                session.admin = username
+            }
         }
 
         console.info(`Player ${username} connected to session ${sessionId}`)
