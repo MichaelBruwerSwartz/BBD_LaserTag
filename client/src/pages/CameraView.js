@@ -243,8 +243,8 @@ export default function CameraView() {
         const b = Math.round(meanColor[2]);
         const colorName = getColorName(r, g, b);
   
-        if (shape === "Triangle" && dist >= 0) {
-          hitDetected(colorName, shape);
+        if ((shape === "Triangle" || shape == "Rectangle" || shape == "Sqaure") && dist >= 0) {
+          hitDetected(colorName, "Triangle");
         }
   
         // Draw contour
