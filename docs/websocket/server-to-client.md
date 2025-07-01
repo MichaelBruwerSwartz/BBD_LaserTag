@@ -29,7 +29,9 @@ Sent to **players and spectators** when a user joins a session.
 Sent to **players and spectators** when the player list changes.
 
 - `admin` - username of the admin user
-- `playerList` - array of player usernames
+- `playerList` - object with player information
+  - key: player username
+  - value: player color
 
 ### `playerQuit`
 
