@@ -12,11 +12,32 @@ field2: 'any data'
 
 Types:
 
-### `adminChange`
+### `elimination`
 
-Sent to **players and spectators** when the admin of a session changes.
+Sent to **players and spectators** when a player is eliminated.
 
-- `username` - username of the new admin
+- `player` - username of player who was eliminated
+
+### `endGame`
+
+Sent to **players and spectators** when the game ends.
+
+### `gameUpdate`
+
+Sent to **players and spectators** every second and contains all game information.
+
+- `players` - players and their information
+  - key: player username
+  - value: player points
+- `timeLeft` - time that remains in seconds
+
+### `hit`
+
+Sent to **players and spectators** when a player hits another player.
+
+- `player` - username of player who hit the target
+- `target` - username of player who was hit
+- `weapon` - the weapon that was used to hit the target
 
 ### `playerJoin`
 
