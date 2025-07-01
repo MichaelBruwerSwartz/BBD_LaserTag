@@ -22,6 +22,13 @@ field2: 'any data'
 
 Types:
 
+### `hit`
+
+Sent when a player hits another player.
+
+- `target` - username of player who was hit
+- `weapon` - the weapon that was used to attack the target
+
 ### `startGame`
 
 Sent to start the game.

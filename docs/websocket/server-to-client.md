@@ -25,6 +25,14 @@ Sent to **players and spectators** every second and contains all game informatio
   - value: player points
 - `timeLeft` - time that remains in seconds
 
+### `hit`
+
+Sent when a player hits another player.
+
+- `player` - username of player who hit the target
+- `target` - username of player who was hit
+- `weapon` - the weapon that was used to hit the target
+
 ### `playerJoin`
 
 Sent to **players and spectators** when a user joins a session.

@@ -184,7 +184,27 @@ wss.on('connection', (ws, req) => {
 
         const { type } = message
 
-        if (type === 'startGame') {
+        if (type === 'hit') {
+            const { target: targetUsername, weapon } = message
+            const target = session.players[targetUsername]
+
+            if (!target) return
+
+            target.points = Math.max(target.points - 10, 0)
+
+            if (target.points <= 0) {
+                // TODO: target died
+            }
+
+            player.points = player.points + 5
+
+            sendToClients(session, JSON.stringify({
+                type: 'hit',
+                player: username,
+                target: targetUsername,
+                weapon
+            }), true, true)
+        } else if (type === 'startGame') {
             session.state = 'game'
             sendToClients(session, JSON.stringify({
                 type: 'startGame'
