@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 export default function PlayerLobby() {
   const [players, setPlayers] = useState([]);
   const [adminUsername, setAdminUsername] = useState("");
+  const [userColor, setUserColor] = useState("");
   const socketRef = useRef(null);
 
   const { state } = useLocation();
@@ -35,6 +36,7 @@ export default function PlayerLobby() {
         const currentPlayer = data.playerList?.find(
           (p) => p.username === username
         );
+        setUserColor(currentPlayer?.color);
         navigate("/camera_view", {
           state: {
             username,
@@ -64,9 +66,12 @@ export default function PlayerLobby() {
         })
       );
     }
+
     navigate("/camera_view", {
       state: {
         username,
+        gameCode,
+        color: userColor,
       },
     });
   };
