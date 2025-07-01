@@ -8,7 +8,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/game" element={<CameraView />} />
+        <Route path="/camera_view" element={<CameraView />} />
         <Route path="/player_lobby" element={<PlayerLobby />} />
       </Routes>
     </Router>

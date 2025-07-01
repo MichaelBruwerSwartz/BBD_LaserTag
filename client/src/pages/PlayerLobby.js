@@ -28,9 +28,15 @@ export default function PlayerLobby() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "playerListUpdate") {
-        console.log("THIS IS THE DATA PLAYERLSIT WITH DATA" + data.playerList);
         setPlayers(data.playerList);
         setAdminUsername(data.admin);
+      }
+      if (data.type === "startGame") {
+        navigate("/camera_view", {
+          state: {
+            username,
+          },
+        });
       }
     };
 
@@ -42,7 +48,7 @@ export default function PlayerLobby() {
       socket.close();
       socketRef.current = null;
     };
-  }, [gameCode, username]); // only run once on mount
+  }, [gameCode, username, navigate]);
 
   const handleStartGame = () => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
@@ -55,7 +61,6 @@ export default function PlayerLobby() {
     }
     navigate("/camera_view", {
       state: {
-        gameCode,
         username,
       },
     });
