@@ -28,7 +28,7 @@ export default function PlayerLobby() {
       const data = JSON.parse(event.data);
       console.log("Message received:", data);
       if (data.type === "playerListUpdate") {
-        console.log("THIS IS THE PLAYERLIST" + data.playerList);
+        console.log("THIS IS THE PLAYERLIST", data.playerList);
         setPlayers(data.playerList);
         setAdminUsername(data.admin);
       }
@@ -41,7 +41,7 @@ export default function PlayerLobby() {
           state: {
             username,
             gameCode,
-            color: currentPlayer?.color || "blue",
+            color: currentPlayer?.color,
           },
         });
       }
