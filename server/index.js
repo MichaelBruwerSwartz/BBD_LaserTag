@@ -2,7 +2,7 @@
 // const cors = require("cors")
 // const morgan = require("morgan")
 
-// const websocket = require("./websocket")
+const websocket = require("./websocket");
 // const router = require("./routes/index")
 
 // const PORT = 4000
