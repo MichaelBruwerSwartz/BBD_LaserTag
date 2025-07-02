@@ -304,6 +304,10 @@ function handleHit(session, player, color, weapon) {
     target.points = Math.max(target.points - pointsLost, 0);
     player.points = player.points + pointsGained;
 
+    // update hits
+    player.hitsGiven++
+    target.hitsReceived++
+
     sendToClients(
         session,
         JSON.stringify({
