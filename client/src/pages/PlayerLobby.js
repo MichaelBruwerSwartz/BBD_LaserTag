@@ -75,7 +75,7 @@ export default function PlayerLobby() {
               state: {
                 username,
                 gameCode,
-                codeId: currentPlayer?.codeId,
+                color,
               },
             });
           }
@@ -215,11 +215,9 @@ export default function PlayerLobby() {
             <li
               key={playerName}
               style={{
-                background: `linear-gradient(135deg, ${
-                  colorMap[color] || "#ddd"
-                } 0%, ${
-                  colorMap[color] || "#ddd"
-                } 70%, rgba(255,255,255,0.1) 100%)`,
+                background: `linear-gradient(135deg, ${colorMap[color] || "#ddd"
+                  } 0%, ${colorMap[color] || "#ddd"
+                  } 70%, rgba(255,255,255,0.1) 100%)`,
                 color: "#333",
                 padding: "1rem",
                 marginBottom: "1.5rem",
