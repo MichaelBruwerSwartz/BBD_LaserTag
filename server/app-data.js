@@ -25,6 +25,9 @@ const exampleSession = {
       points: 0,
       hitsGiven: 0,
       hitsReceived: 0,
+      activePowerups: {
+        'powerupId': 0 // duration in seconds
+      }
     },
   },
   spectators: {

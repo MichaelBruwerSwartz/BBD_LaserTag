@@ -10,7 +10,7 @@ field1: 'any data'
 field2: 'any data'
 ```
 
-Types:
+## Types
 
 ### `elimination`
 
@@ -59,6 +59,13 @@ Sent to **players and spectators** when the player list changes.
 ### `playerQuit`
 
 Sent to **players and spectators** when a user leaves a session.
+
+### `powerup`
+
+Sent to **players and spectators** when a user receives a powerup.
+
+- `duration` - the duration the player has the powerup for
+- `powerup` - the type of powerup received
 
 - `username` - username of player who quit
 
