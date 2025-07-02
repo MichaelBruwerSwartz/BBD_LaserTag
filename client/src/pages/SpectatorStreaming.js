@@ -10,46 +10,70 @@ export default function SpectatorStreaming() {
   const { gameCode } = location.state || {};
 
   useEffect(() => {
-    const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}/spectator`
-    );
+    const socketUrl = `wss://bbd-lasertag.onrender.com/session/${gameCode}/spectator`;
+    console.log("Connecting to WebSocket at:", socketUrl);
+    const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log("Connected as spectator to session:", gameCode);
+      console.log("✅ Connected as spectator to session:", gameCode);
     };
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log("📦 Raw WebSocket message received:", data);
 
-      console.log("THIS IS THE DATA BEING RECEIVED" + data);
-      if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
-        setFrames(data.frames); // replaces the whole frame list each time
+        if (data.type === "cameraFramesBatch") {
+          console.log("✅ Detected cameraFramesBatch");
+
+          if (Array.isArray(data.frames)) {
+            console.log("📷 Received frames array:", data.frames);
+            setFrames(data.frames);
+
+            const currentUsername = frames[currentIndex]?.username;
+            const stillExists = data.frames.find(
+              (f) => f.username === currentUsername
+            );
+            if (!stillExists) {
+              console.log("ℹ️ Current player left — resetting to first player");
+              setCurrentIndex(0);
+            }
+          } else {
+            console.warn("⚠️ 'frames' is not an array:", data.frames);
+          }
+        }
+      } catch (err) {
+        console.error("❌ Failed to parse WebSocket message:", err);
       }
     };
 
     socket.onerror = (err) => {
-      console.error("WebSocket error:", err);
+      console.error("❌ WebSocket error:", err);
     };
 
     socket.onclose = () => {
-      console.log("Spectator WebSocket closed.");
+      console.log("🛑 Spectator WebSocket closed.");
     };
 
     return () => {
       socket.close();
     };
-  }, [gameCode]);
+  }, [gameCode, frames, currentIndex]);
 
   const goToNext = () => {
+    console.log("➡️ Going to next player");
     setCurrentIndex((prev) => (prev + 1) % frames.length);
   };
 
   const goToPrev = () => {
+    console.log("⬅️ Going to previous player");
     setCurrentIndex((prev) => (prev - 1 + frames.length) % frames.length);
   };
 
-  const current = frames[currentIndex];
+  const currentFrame = frames[currentIndex];
+  console.log("🎯 Current Index:", currentIndex);
+  console.log("🎥 Current Frame Object:", currentFrame);
 
   return (
     <div
@@ -62,18 +86,20 @@ export default function SpectatorStreaming() {
         alignItems: "center",
         justifyContent: "center",
         color: "white",
+        padding: "20px",
+        boxSizing: "border-box",
       }}
     >
       <h2 style={{ marginBottom: "20px" }}>
-        {current
-          ? `Viewing: ${current.username}`
+        {currentFrame
+          ? `Viewing: ${currentFrame.username}`
           : "Waiting for player streams..."}
       </h2>
 
-      {current?.frame && (
+      {currentFrame && currentFrame.frame && (
         <img
-          src={current.frame}
-          alt={`Live stream from ${current.username}`}
+          src={currentFrame.frame}
+          alt={`Live stream from ${currentFrame.username}`}
           style={{
             width: "90%",
             maxWidth: "800px",
@@ -87,36 +113,24 @@ export default function SpectatorStreaming() {
 
       {frames.length > 1 && (
         <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
-          <button
-            onClick={goToPrev}
-            style={{
-              fontSize: "24px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#1f2937",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            ← Previous
+          <button onClick={goToPrev} style={buttonStyle}>
+            ⬅️ Previous
           </button>
-          <button
-            onClick={goToNext}
-            style={{
-              fontSize: "24px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#1f2937",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            Next →
+          <button onClick={goToNext} style={buttonStyle}>
+            Next ➡️
           </button>
         </div>
       )}
     </div>
   );
 }
+
+const buttonStyle = {
+  fontSize: "20px",
+  padding: "10px 20px",
+  borderRadius: "8px",
+  border: "none",
+  backgroundColor: "#1f2937",
+  color: "#fff",
+  cursor: "pointer",
+};
