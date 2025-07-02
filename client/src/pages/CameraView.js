@@ -108,10 +108,11 @@ export default function CameraView() {
     }
 
     detect();
-
+/*
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
+*/
   }, []);
 
   // Map RGB to closest CSS color name (used for hit color detection)
