@@ -256,8 +256,15 @@ export default function Calibration() {
   }
 
   return (
-    <div>
-      <video ref={videoRef} playsInline muted autoPlay></video>
+    <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
+      <video
+        ref={videoRef}
+        playsInline
+        muted
+        autoPlay
+        style={{ display: "none" }}
+      />
+
       <canvas
         ref={canvasRef}
         style={{
@@ -266,16 +273,25 @@ export default function Calibration() {
           position: "absolute",
           top: 0,
           left: 0,
-          zIndex: 1,
+          zIndex: 1, // Canvas is under the controls
         }}
-      ></canvas>
+      />
 
       <div
         style={{
+          position: "absolute", // <-- Ensure it’s layered over the canvas
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 2, // <-- Higher than canvas
           marginTop: "1rem",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "flex-end", // move it to bottom if preferred
+          paddingBottom: "2rem",
+          pointerEvents: "auto", // in case canvas intercepts taps
         }}
       >
         <input
