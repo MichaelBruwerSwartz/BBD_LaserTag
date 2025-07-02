@@ -12,7 +12,7 @@ export default function Calibration() {
   const [capturedPose, setCapturedPose] = useState(null);
   const [username, setUsername] = useState("");
   const lastSentColorRef = useRef(null);
-
+  
   // Add refs to control the render loop
   const isRunningRef = useRef(false);
   const animationFrameRef = useRef(null);
@@ -24,19 +24,17 @@ export default function Calibration() {
 
   useEffect(() => {
     let mounted = true;
-
+    
     async function init() {
       try {
         // Set TensorFlow backend explicitly
         await tf.ready();
-
-        if (tf.getBackend() === "webgpu") {
-          console.log(
-            "🔄 WebGPU detected but may be unstable, falling back to WebGL"
-          );
-          await tf.setBackend("webgl");
+        
+        if (tf.getBackend() === 'webgpu') {
+          console.log('🔄 WebGPU detected but may be unstable, falling back to WebGL');
+          await tf.setBackend('webgl');
         }
-
+        
         console.log(`🧠 TensorFlow.js backend: ${tf.getBackend()}`);
 
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -48,13 +46,13 @@ export default function Calibration() {
 
         const video = videoRef.current;
         if (!video) return;
-
+        
         video.srcObject = stream;
         await video.play();
 
         const canvas = canvasRef.current;
         if (!canvas) return;
-
+        
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
@@ -76,7 +74,7 @@ export default function Calibration() {
         isRunningRef.current = true;
         renderLoop(detectorInstance);
       } catch (error) {
-        console.error("❌ Error initializing camera/detector:", error);
+        console.error('❌ Error initializing camera/detector:', error);
       }
     }
 
@@ -125,18 +123,18 @@ export default function Calibration() {
       console.log("🧹 Calibration cleanup starting...");
       mounted = false;
       isRunningRef.current = false;
-
+      
       // Cancel animation frame
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
-
+      
       // Close WebSocket
       if (socket.readyState === WebSocket.OPEN) {
         socket.close(1000, "Component unmounting");
       }
-
+      
       // Clean up detector with a small delay to ensure all operations complete
       setTimeout(() => {
         if (detectorRef.current?.dispose) {
@@ -191,7 +189,7 @@ export default function Calibration() {
 
   function getClosestColorName(rgbString) {
     if (!rgbString) return "unknown";
-
+    
     const cssColors = {
       red: [255, 0, 0],
       green: [0, 128, 0],
@@ -204,12 +202,12 @@ export default function Calibration() {
       lime: [0, 255, 0],
       navy: [0, 0, 128],
     };
-
+    
     try {
       const [r, g, b] = rgbString.match(/\d+/g).map(Number);
       let closestName = "";
       let minDist = Infinity;
-
+      
       for (const [name, [cr, cg, cb]] of Object.entries(cssColors)) {
         const dist = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
         if (dist < minDist) {
@@ -227,10 +225,12 @@ export default function Calibration() {
   async function renderLoop(detector) {
     const canvas = canvasRef.current;
     const video = videoRef.current;
-
+    
     if (!canvas || !video || !detector) return;
-
+    
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    let lastPoseDetection = 0;
+    const poseDetectionInterval = 100; // Detect poses every 100ms instead of every frame
 
     async function draw() {
       // Check if we should continue running
@@ -242,16 +242,35 @@ export default function Calibration() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Use tf.tidy to automatically dispose tensors
-        const poses = await tf.tidy(() => {
-          return detector.estimatePoses(video);
-        });
+        const now = Date.now();
+        
+        // Only run pose detection at intervals to reduce tensor pressure
+        if (now - lastPoseDetection > poseDetectionInterval) {
+          const numTensorsBefore = tf.memory().numTensors;
+          
+          // Estimate poses
+          const poses = await detector.estimatePoses(video);
 
-        if (poses.length > 0) {
-          const keypoints = poses[0].keypoints;
-          drawTorsoBox(ctx, keypoints);
-          drawKeypoints(ctx, keypoints);
-          setCapturedPose(keypoints);
+          if (poses.length > 0) {
+            const keypoints = poses[0].keypoints;
+            drawTorsoBox(ctx, keypoints);
+            drawKeypoints(ctx, keypoints);
+            setCapturedPose(keypoints);
+          }
+
+          lastPoseDetection = now;
+          
+          // Monitor tensor usage
+          const numTensorsAfter = tf.memory().numTensors;
+          if (numTensorsAfter > numTensorsBefore + 5) { // Allow some variance
+            console.log(`⚠️ Tensor count increased: ${numTensorsBefore} -> ${numTensorsAfter}`);
+          }
+        } else {
+          // Just redraw the existing pose detection results
+          if (capturedPose) {
+            drawTorsoBox(ctx, capturedPose);
+            drawKeypoints(ctx, capturedPose);
+          }
         }
 
         // Schedule next frame only if still running
@@ -262,7 +281,11 @@ export default function Calibration() {
         console.error("Error in render loop:", error);
         // Continue the loop even if there's an error, but with a delay
         if (isRunningRef.current) {
-          animationFrameRef.current = requestAnimationFrame(draw);
+          setTimeout(() => {
+            if (isRunningRef.current) {
+              animationFrameRef.current = requestAnimationFrame(draw);
+            }
+          }, 100);
         }
       }
     }
@@ -326,15 +349,14 @@ export default function Calibration() {
       return;
     }
 
-    const modeColor = getModeColorFromPoints(ctx, ls, rs); // raw "rgb(r,g,b)"
-    const closestColor = getClosestColorName(modeColor); // map to e.g. "purple"
-    lastSentColorRef.current = closestColor; // store named color
+    const modeColor = getModeColorFromPoints(ctx, ls, rs);
+    lastSentColorRef.current = modeColor;
 
     const message = {
       type: "calibration",
       username,
       gameCode,
-      color: closestColor,
+      color: modeColor,
     };
 
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
