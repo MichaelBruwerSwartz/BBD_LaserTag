@@ -439,6 +439,7 @@ export default function CameraView() {
         socketRef.current.send(
           JSON.stringify({
             type: "cameraFrame",
+            username,
             frame,
           })
         );
