@@ -45,7 +45,7 @@ export default function Calibration() {
     init();
 
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}/calibration`
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}/check_color?color=${capturedColor}`
     );
     socketRef.current = socket;
 
@@ -54,10 +54,9 @@ export default function Calibration() {
     };
 
     socket.onmessage = (event) => {
-      const message = event.data.trim().toLowerCase();
-      console.log("📨 Message from server:", message);
+      const data = JSON.parse(event.data);
 
-      if (message === "yes") {
+      if (data.available) {
         navigate("/player_lobby", {
           state: {
             color: capturedColor,
@@ -65,7 +64,7 @@ export default function Calibration() {
             gameCode,
           },
         });
-      } else if (message === "no") {
+      } else {
         alert("Colour already in use");
         // Stay on the page
       }
