@@ -258,7 +258,17 @@ export default function Calibration() {
   return (
     <div>
       <video ref={videoRef} playsInline muted autoPlay></video>
-      <canvas ref={canvasRef}></canvas>
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100vw",
+          height: "100vh",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          zIndex: 1,
+        }}
+      ></canvas>
 
       <div
         style={{
