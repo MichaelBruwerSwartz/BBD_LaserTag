@@ -65,18 +65,18 @@ export default function LandingPage() {
       {/* Logo Section */}
       <div
         style={{
-          height: "35vh", // Reduced from 40vh for balance
+          height: "25vh", // Reduced to make it more compact
           width: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
           marginBottom: "0",
-          marginTop: "-5vh", // Moves logo higher
+          marginTop: "-20vh", // Increased to move logo higher
           zIndex: 1,
         }}
       >
         <img
-          src="/images/Laser-Tag.png"
+          src="/images/Laser-Tag-Logo.png"
           alt="Game Logo"
           style={{
             maxHeight: "90%",
@@ -101,7 +101,7 @@ export default function LandingPage() {
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          marginTop: "-5vh", // Adjusted to match new logo height
+          marginTop: "0", // Adjusted to balance with new logo position
         }}
       >
         <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>Enter Code:</h1>
