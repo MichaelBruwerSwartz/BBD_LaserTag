@@ -138,6 +138,7 @@ export default function SpectatorStreaming() {
           <img
             src="/scope.png"
             alt="Scope Reticle"
+            className="scope-reticle"
             style={{
               position: "absolute",
               top: "50%",
@@ -219,6 +220,10 @@ export default function SpectatorStreaming() {
           @media (min-width: 1024px) {
             .player-stream-img {
               max-height: 50vh !important;
+            }
+            .scope-reticle {
+              width: 80px !important;
+              height: 80px !important;
             }
           }
         `}
