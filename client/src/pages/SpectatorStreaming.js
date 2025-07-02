@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 export default function SpectatorStreaming() {
-  const [frames, setFrames] = useState([]); // Array of { username, frame }
+  const [frameMap, setFrameMap] = useState(new Map());
   const [currentIndex, setCurrentIndex] = useState(0);
   const socketRef = useRef(null);
 
@@ -11,7 +11,7 @@ export default function SpectatorStreaming() {
 
   useEffect(() => {
     const socketUrl = `wss://bbd-lasertag.onrender.com/session/${gameCode}/spectator`;
-    console.log("Connecting to WebSocket at:", socketUrl);
+    console.log("🔌 Connecting to WebSocket at:", socketUrl);
     const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
@@ -24,24 +24,30 @@ export default function SpectatorStreaming() {
         const data = JSON.parse(event.data);
         console.log("📦 Raw WebSocket message received:", data);
 
-        if (data.type === "cameraFramesBatch") {
-          console.log("✅ Detected cameraFramesBatch");
+        if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
+          setFrameMap((prevMap) => {
+            const newMap = new Map(prevMap);
+            data.frames.forEach(({ username, frame }) => {
+              newMap.set(username, frame);
+            });
 
-          if (Array.isArray(data.frames)) {
-            console.log("📷 Received frames array:", data.frames);
-            setFrames(data.frames);
+            // Remove players who are no longer sending frames
+            const activeUsernames = new Set(data.frames.map((f) => f.username));
+            for (let key of newMap.keys()) {
+              if (!activeUsernames.has(key)) {
+                newMap.delete(key);
+              }
+            }
 
-            const currentUsername = frames[currentIndex]?.username;
-            const stillExists = data.frames.find(
-              (f) => f.username === currentUsername
-            );
-            if (!stillExists) {
-              console.log(" Current player left — resetting to first player");
+            const usernames = Array.from(newMap.keys());
+            const currentUsername = usernames[currentIndex];
+            if (!activeUsernames.has(currentUsername)) {
+              console.log("⚠️ Current player removed — resetting to index 0");
               setCurrentIndex(0);
             }
-          } else {
-            console.warn("⚠️ 'frames' is not an array:", data.frames);
-          }
+
+            return newMap;
+          });
         }
       } catch (err) {
         console.error("❌ Failed to parse WebSocket message:", err);
@@ -59,21 +65,23 @@ export default function SpectatorStreaming() {
     return () => {
       socket.close();
     };
-  }, []);
+  }, [gameCode, currentIndex]);
+
+  const usernames = Array.from(frameMap.keys());
+  const currentUsername = usernames[currentIndex];
+  const currentFrame = frameMap.get(currentUsername);
 
   const goToNext = () => {
-    console.log("➡️ Going to next player");
-    setCurrentIndex((prev) => (prev + 1) % frames.length);
+    setCurrentIndex((prev) => (prev + 1) % usernames.length);
   };
 
   const goToPrev = () => {
-    console.log("⬅️ Going to previous player");
-    setCurrentIndex((prev) => (prev - 1 + frames.length) % frames.length);
+    setCurrentIndex((prev) => (prev - 1 + usernames.length) % usernames.length);
   };
 
-  const currentFrame = frames[currentIndex];
   console.log("🎯 Current Index:", currentIndex);
-  console.log("🎥 Current Frame Object:", currentFrame);
+  console.log("🎥 Current Username:", currentUsername);
+  console.log("🖼️ FrameMap:", frameMap);
 
   return (
     <div
@@ -91,15 +99,15 @@ export default function SpectatorStreaming() {
       }}
     >
       <h2 style={{ marginBottom: "20px" }}>
-        {currentFrame
-          ? `Viewing: ${currentFrame.username}`
+        {currentUsername
+          ? `Viewing: ${currentUsername}`
           : "Waiting for player streams..."}
       </h2>
 
-      {currentFrame && currentFrame.frame && (
+      {currentFrame && (
         <img
-          src={currentFrame.frame}
-          alt={`Live stream from ${currentFrame.username}`}
+          src={currentFrame}
+          alt={`Live stream from ${currentUsername}`}
           style={{
             width: "90%",
             maxWidth: "800px",
@@ -111,7 +119,7 @@ export default function SpectatorStreaming() {
         />
       )}
 
-      {frames.length > 1 && (
+      {usernames.length > 1 && (
         <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
           <button onClick={goToPrev} style={buttonStyle}>
             Previous Player
