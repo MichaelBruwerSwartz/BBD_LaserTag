@@ -75,7 +75,7 @@ export default function CameraView() {
 
         // check if game has ended -> forward to leaderboard
         if (timeLeft === 0) {
-          navigate("/leaderboard", {
+          navigate("/player_leaderboard", {
             state: {
               players,
             },

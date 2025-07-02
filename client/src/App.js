@@ -4,6 +4,7 @@ import PlayerLobby from "./pages/PlayerLobby";
 import Landing from "./pages/Landing";
 import SpectatorLobby from "./pages/SpectatorLobby";
 import SpectatorStreaming from "./pages/SpectatorStreaming";
+import PlayerLeaderboard from "./pages/PlayerLeaderboard";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/player_lobby" element={<PlayerLobby />} />
         <Route path="/spectator_lobby" element={<SpectatorLobby />} />
         <Route path="/spectator_stream" element={<SpectatorStreaming />} />
+        <Route path="/player_leaderboard" element={<PlayerLeaderboard />} />
       </Routes>
     </Router>
   );

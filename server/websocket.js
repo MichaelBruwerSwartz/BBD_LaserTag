@@ -33,19 +33,17 @@ function sendToClients(session, message, sendToPlayers, sendToSpectators) {
 }
 
 function getPlayerList(session) {
-    const a = Object.keys(session.players).map((username) => {
-        const { codeId, hitsGiven, hitsReceived, points } = session.players[username];
+    return Object.keys(session.players).map((username) => {
+        const { codeId, hitsGiven, hitsTaken, points } = session.players[username];
         return {
             username,
             codeId,
             color: colorMap[codeId],
             hitsGiven,
-            hitsReceived,
+            hitsTaken,
             points
         };
-    });
-    console.log(a)
-    return a
+    })
 }
 
 function getAvailablePlayerCodeId(session) {
@@ -173,6 +171,8 @@ wss.on("connection", (ws, req) => {
             connection: ws,
             username,
             codeId: codeId ?? getAvailablePlayerCodeId(session) ?? 0,
+            hitsGiven: 0,
+            hitsTaken: 0,
             points: 50,
         };
 
@@ -217,7 +217,7 @@ wss.on("connection", (ws, req) => {
                 handleHit(session, session.players[username], codeId, weapon);
             } else if (type === "startGame") {
                 session.state = "game";
-                session.timeLeft = 5 * 60;
+                session.timeLeft = 60;
                 sendToClients(
                     session,
                     JSON.stringify({
