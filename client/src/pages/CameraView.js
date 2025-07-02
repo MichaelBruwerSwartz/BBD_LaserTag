@@ -36,6 +36,12 @@ export default function CameraView() {
 
   // WebSocket ref
   const socketRef = useRef(null);
+  const audioRef = useRef({
+    pistol: new Audio("/pistol.mp3"),
+    shotgun: new Audio("/shotgun.mp3"),
+    sniper: new Audio("/sniper.mp3"),
+    ouch: new Audio("/ouch.mp3"),
+  });
 
   // Connect to WebSocket & listen for game updates
   useEffect(() => {
@@ -62,6 +68,19 @@ export default function CameraView() {
         setLeaderboardData(players);
         if (timeLeft === 0) {
           navigate("/player_leaderboard", { state: { players } });
+        }
+      }
+      if (data.type === "hit") {
+        const { player, target, weapon } = data;
+        console.log(`🎯 ${player} hit ${target} with ${weapon}`);
+
+        // If I am the one who got hit
+        if (target === username) {
+          const ouch = audioRef.current.ouch;
+          if (ouch) {
+            ouch.currentTime = 0;
+            ouch.play().catch((e) => console.warn("Ouch sound failed:", e));
+          }
         }
       }
     };
@@ -297,35 +316,28 @@ export default function CameraView() {
     canvas.modeColor = modeColor;
   }
 
-  // Shoot button handler
   const handleShoot = () => {
     if (isReloading) return;
-
     if (ammo <= 0) {
-      // Prevent shooting with no ammo left
       console.log("🔫 No ammo left — can't shoot");
       return;
     }
 
-    // Fire the shot
+    // 🔊 Play shooting sound based on gun type
+    const shootSound = audioRef.current[gunType];
+    if (shootSound) {
+      shootSound.currentTime = 0;
+      shootSound.play().catch((e) => console.warn("Audio play failed:", e));
+    }
+
     setAmmo((prevAmmo) => {
       const newAmmo = prevAmmo - 1;
-      console.log(`🔫 Shot fired. Ammo left: ${newAmmo}`);
-
-      // If this was the last bullet, trigger reload
-      if (newAmmo === 0) {
-        console.log("🔄 Auto-reloading...");
-        reload();
-      }
-
+      if (newAmmo === 0) reload();
       return newAmmo;
     });
 
     if (navigator.vibrate) navigator.vibrate([75, 25, 75]);
-
-    if (canvasRef.current) {
-      checkHit(canvasRef.current);
-    }
+    if (canvasRef.current) checkHit(canvasRef.current);
   };
 
   // Gun selection handler
@@ -539,8 +551,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                    ? "/sniper.png"
-                    : "/pistol.png"
+                  ? "/sniper.png"
+                  : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
