@@ -2,13 +2,13 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const colorMap = {
-  "red": "#FF8A9A",         // Lighter Laser Cherry
-  "orange": "#FFB74D",      // Softer Amber Neon
-  "yellow": "#FFE082",      // Muted Amber Spark
-  "green": "#C5E1A5",       // Softer Acid Green
-  "blue": "#90CAF9",        // Lighter Laser Azure
-  "pink": "#F8BBD0",        // Softer Bubblegum Light
-  "purple": "#CE93D8"       // Muted Plasma Purple
+  red: "#FF8A9A", // Lighter Laser Cherry
+  orange: "#FFB74D", // Softer Amber Neon
+  yellow: "#FFE082", // Muted Amber Spark
+  green: "#C5E1A5", // Softer Acid Green
+  blue: "#90CAF9", // Lighter Laser Azure
+  pink: "#F8BBD0", // Softer Bubblegum Light
+  purple: "#CE93D8", // Muted Plasma Purple
 };
 
 export default function PlayerLobby() {
@@ -41,18 +41,10 @@ export default function PlayerLobby() {
         console.log("THIS IS THE PLAYERLIST", data.playerList);
         setPlayers(data.playerList);
         setAdminUsername(data.admin);
-<<<<<<< HEAD
       } else if (data.type === "startGame") {
         const currentPlayer = data.playerList.find(
           (p) => p.username === username
         );
-=======
-      }
-      if (data.type === "startGame") {
-        console.log(data)
-        const currentPlayer = data.playerList.find((p) => p.username === username);
-        console.log("Navigating with player color", currentPlayer?.color);
->>>>>>> b1f1c415a0ef61315b20d81150c883cb87efcd7d
 
         navigate("/camera_view", {
           state: {
@@ -102,7 +94,14 @@ export default function PlayerLobby() {
         position: "relative",
       }}
     >
-      <div style={{ width: "100%", textAlign: "center", paddingTop: "1rem", paddingBottom: "2rem" }}>
+      <div
+        style={{
+          width: "100%",
+          textAlign: "center",
+          paddingTop: "1rem",
+          paddingBottom: "2rem",
+        }}
+      >
         <img
           src="/images/Laser-Tag.png"
           alt="Logo"
@@ -137,7 +136,11 @@ export default function PlayerLobby() {
             <li
               key={playerName}
               style={{
-                background: `linear-gradient(135deg, ${colorMap[color] || "#ddd"} 0%, ${colorMap[color] || "#ddd"} 70%, rgba(255,255,255,0.1) 100%)`,
+                background: `linear-gradient(135deg, ${
+                  colorMap[color] || "#ddd"
+                } 0%, ${
+                  colorMap[color] || "#ddd"
+                } 70%, rgba(255,255,255,0.1) 100%)`,
                 color: "#333",
                 padding: "1rem",
                 marginBottom: "1.5rem",
@@ -152,11 +155,13 @@ export default function PlayerLobby() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-8px)";
-                e.currentTarget.style.boxShadow = "0 10px 20px rgba(0, 0, 0, 0.4)";
+                e.currentTarget.style.boxShadow =
+                  "0 10px 20px rgba(0, 0, 0, 0.4)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 6px 15px rgba(0, 0, 0, 0.3)";
+                e.currentTarget.style.boxShadow =
+                  "0 6px 15px rgba(0, 0, 0, 0.3)";
               }}
             >
               <span style={{ position: "relative", zIndex: 1 }}>
