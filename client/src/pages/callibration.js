@@ -19,12 +19,22 @@ export default function Calibration() {
     let detectorInstance;
 
     async function init() {
+      // Check if tf is ready before proceeding
+      if (!tf) {
+        console.error("TensorFlow.js is not loaded");
+        return;
+      }
       await tf.ready();
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
         audio: false,
+      }).catch(err => {
+        console.error("Camera access denied:", err);
+        return null;
       });
+
+      if (!stream) return;
 
       const video = videoRef.current;
       if (!video) return;
@@ -41,7 +51,12 @@ export default function Calibration() {
         {
           modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
         }
-      );
+      ).catch(err => {
+        console.error("Pose detector initialization failed:", err);
+        return null;
+      });
+
+      if (!detectorInstance) return;
 
       setDetector(detectorInstance);
       renderLoop(detectorInstance);
@@ -119,6 +134,7 @@ export default function Calibration() {
     const video = videoRef.current;
 
     async function draw() {
+      if (!ctx || !video) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
@@ -137,6 +153,7 @@ export default function Calibration() {
   }
 
   function drawKeypoints(ctx, keypoints) {
+    if (!ctx) return;
     keypoints.forEach((keypoint) => {
       if (keypoint.score > 0.5) {
         const { x, y } = keypoint;
@@ -149,6 +166,7 @@ export default function Calibration() {
   }
 
   function drawTorsoBox(ctx, keypoints) {
+    if (!ctx) return;
     const ls = getKeypoint(keypoints, "left_shoulder");
     const rs = getKeypoint(keypoints, "right_shoulder");
     const lh = getKeypoint(keypoints, "left_hip");
