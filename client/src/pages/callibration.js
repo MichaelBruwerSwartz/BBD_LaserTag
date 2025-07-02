@@ -8,48 +8,81 @@ export default function Calibration() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
-  const usernameRef = useRef("");
   const [detector, setDetector] = useState(null);
   const [capturedPose, setCapturedPose] = useState(null);
   const [username, setUsername] = useState("");
-  const lastSentColorRef = useRef(null); // ✅ Ref to track last sent color
+  const lastSentColorRef = useRef(null);
+
+  // Add refs to control the render loop
+  const isRunningRef = useRef(false);
+  const animationFrameRef = useRef(null);
+  const detectorRef = useRef(null);
 
   const navigate = useNavigate();
   const location = useLocation();
   const { gameCode } = location.state || {};
 
   useEffect(() => {
-    let detectorInstance;
+    let mounted = true;
 
     async function init() {
-      await tf.ready();
+      try {
+        // Set TensorFlow backend explicitly
+        await tf.ready();
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "user" } },
-        audio: false,
-      });
-
-      const video = videoRef.current;
-      video.srcObject = stream;
-      await video.play();
-
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      detectorInstance = await poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet,
-        {
-          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+        if (tf.getBackend() === "webgpu") {
+          console.log(
+            "🔄 WebGPU detected but may be unstable, falling back to WebGL"
+          );
+          await tf.setBackend("webgl");
         }
-      );
 
-      setDetector(detectorInstance);
-      renderLoop(detectorInstance);
+        console.log(`🧠 TensorFlow.js backend: ${tf.getBackend()}`);
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "user" } },
+          audio: false,
+        });
+
+        if (!mounted) return; // Check if component is still mounted
+
+        const video = videoRef.current;
+        if (!video) return;
+
+        video.srcObject = stream;
+        await video.play();
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const detectorInstance = await poseDetection.createDetector(
+          poseDetection.SupportedModels.MoveNet,
+          {
+            modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+          }
+        );
+
+        if (!mounted) {
+          // If component unmounted during init, clean up
+          if (detectorInstance?.dispose) detectorInstance.dispose();
+          return;
+        }
+
+        detectorRef.current = detectorInstance;
+        setDetector(detectorInstance);
+        isRunningRef.current = true;
+        renderLoop(detectorInstance);
+      } catch (error) {
+        console.error("❌ Error initializing camera/detector:", error);
+      }
     }
 
     init();
 
+    // WebSocket connection
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}/check_color`
     );
@@ -68,7 +101,7 @@ export default function Calibration() {
           navigate("/player_lobby", {
             state: {
               color: getClosestColorName(lastSentColorRef.current) ?? "unknown",
-              username: usernameRef.current,
+              username,
               gameCode,
             },
           });
@@ -89,10 +122,31 @@ export default function Calibration() {
     };
 
     return () => {
-      socket.close();
-      if (detectorInstance?.dispose) detectorInstance.dispose();
+      console.log("🧹 Calibration cleanup starting...");
+      mounted = false;
+      isRunningRef.current = false;
+
+      // Cancel animation frame
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
+      // Close WebSocket
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close(1000, "Component unmounting");
+      }
+
+      // Clean up detector with a small delay to ensure all operations complete
+      setTimeout(() => {
+        if (detectorRef.current?.dispose) {
+          console.log("🧹 Disposing detector...");
+          detectorRef.current.dispose();
+          detectorRef.current = null;
+        }
+      }, 100);
     };
-  }, []);
+  }, [gameCode, username, navigate]);
 
   function getKeypoint(keypoints, name) {
     return keypoints.find((k) => k.name === name || k.part === name);
@@ -106,32 +160,38 @@ export default function Calibration() {
 
     if (width < 1 || height < 1) return "aqua";
 
-    const imgData = ctx.getImageData(minX, minY, width, height);
-    const colorCount = new Map();
+    try {
+      const imgData = ctx.getImageData(minX, minY, width, height);
+      const colorCount = new Map();
 
-    for (let i = 0; i < imgData.data.length; i += 4) {
-      const r = imgData.data[i];
-      const g = imgData.data[i + 1];
-      const b = imgData.data[i + 2];
-      const key = `${r},${g},${b}`;
-      colorCount.set(key, (colorCount.get(key) || 0) + 1);
-    }
-
-    let modeColor = "aqua";
-    let maxCount = 0;
-
-    for (const [key, count] of colorCount.entries()) {
-      if (count > maxCount) {
-        maxCount = count;
-        modeColor = `rgb(${key})`;
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const r = imgData.data[i];
+        const g = imgData.data[i + 1];
+        const b = imgData.data[i + 2];
+        const key = `${r},${g},${b}`;
+        colorCount.set(key, (colorCount.get(key) || 0) + 1);
       }
-    }
 
-    return modeColor;
+      let modeColor = "aqua";
+      let maxCount = 0;
+
+      for (const [key, count] of colorCount.entries()) {
+        if (count > maxCount) {
+          maxCount = count;
+          modeColor = `rgb(${key})`;
+        }
+      }
+
+      return modeColor;
+    } catch (error) {
+      console.error("Error getting color from canvas:", error);
+      return "aqua";
+    }
   }
 
-  // Map RGB to closest CSS color name (used for hit color detection)
   function getClosestColorName(rgbString) {
+    if (!rgbString) return "unknown";
+
     const cssColors = {
       red: [255, 0, 0],
       green: [0, 128, 0],
@@ -144,39 +204,67 @@ export default function Calibration() {
       lime: [0, 255, 0],
       navy: [0, 0, 128],
     };
-    const [r, g, b] = rgbString.match(/\d+/g).map(Number);
-    let closestName = "";
-    let minDist = Infinity;
-    for (const [name, [cr, cg, cb]] of Object.entries(cssColors)) {
-      const dist = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
-      if (dist < minDist) {
-        minDist = dist;
-        closestName = name;
+
+    try {
+      const [r, g, b] = rgbString.match(/\d+/g).map(Number);
+      let closestName = "";
+      let minDist = Infinity;
+
+      for (const [name, [cr, cg, cb]] of Object.entries(cssColors)) {
+        const dist = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
+        if (dist < minDist) {
+          minDist = dist;
+          closestName = name;
+        }
       }
+      return closestName;
+    } catch (error) {
+      console.error("Error parsing color:", error);
+      return "unknown";
     }
-    return closestName;
   }
+
   async function renderLoop(detector) {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
     const video = videoRef.current;
 
+    if (!canvas || !video || !detector) return;
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
     async function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      await tf.engine().startScope();
-
-      const poses = await detector.estimatePoses(video);
-      if (poses.length > 0) {
-        const keypoints = poses[0].keypoints;
-        drawTorsoBox(ctx, keypoints);
-        drawKeypoints(ctx, keypoints);
-        setCapturedPose(keypoints);
+      // Check if we should continue running
+      if (!isRunningRef.current || !detectorRef.current) {
+        return;
       }
 
-      await tf.engine().endScope();
-      requestAnimationFrame(draw);
+      try {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Use tf.tidy to automatically dispose tensors
+        const poses = await tf.tidy(() => {
+          return detector.estimatePoses(video);
+        });
+
+        if (poses.length > 0) {
+          const keypoints = poses[0].keypoints;
+          drawTorsoBox(ctx, keypoints);
+          drawKeypoints(ctx, keypoints);
+          setCapturedPose(keypoints);
+        }
+
+        // Schedule next frame only if still running
+        if (isRunningRef.current) {
+          animationFrameRef.current = requestAnimationFrame(draw);
+        }
+      } catch (error) {
+        console.error("Error in render loop:", error);
+        // Continue the loop even if there's an error, but with a delay
+        if (isRunningRef.current) {
+          animationFrameRef.current = requestAnimationFrame(draw);
+        }
+      }
     }
 
     draw();
@@ -223,7 +311,7 @@ export default function Calibration() {
 
   function capturePose() {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
     if (!capturedPose) {
       alert("No pose detected yet. Try again.");
@@ -238,14 +326,15 @@ export default function Calibration() {
       return;
     }
 
-    const modeColor = getModeColorFromPoints(ctx, ls, rs);
-    lastSentColorRef.current = modeColor; // ✅ save color in ref
+    const modeColor = getModeColorFromPoints(ctx, ls, rs); // raw "rgb(r,g,b)"
+    const closestColor = getClosestColorName(modeColor); // map to e.g. "purple"
+    lastSentColorRef.current = closestColor; // store named color
 
     const message = {
       type: "calibration",
       username,
       gameCode,
-      color: modeColor,
+      color: closestColor,
     };
 
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
@@ -274,34 +363,31 @@ export default function Calibration() {
           position: "absolute",
           top: 0,
           left: 0,
-          zIndex: 1, // Canvas is under the controls
+          zIndex: 1,
         }}
       />
 
       <div
         style={{
-          position: "absolute", // <-- Ensure it’s layered over the canvas
+          position: "absolute",
           top: 0,
           left: 0,
           width: "100%",
           height: "100%",
-          zIndex: 2, // <-- Higher than canvas
+          zIndex: 2,
           marginTop: "1rem",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "flex-end", // move it to bottom if preferred
+          justifyContent: "flex-end",
           paddingBottom: "2rem",
-          pointerEvents: "auto", // in case canvas intercepts taps
+          pointerEvents: "auto",
         }}
       >
         <input
           type="text"
           value={username}
-          onChange={(e) => {
-            setUsername(e.target.value);
-            usernameRef.current = e.target.value;
-          }}
+          onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter your username"
           style={{
             padding: "0.75rem 1.25rem",
