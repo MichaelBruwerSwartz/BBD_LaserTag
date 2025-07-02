@@ -177,7 +177,7 @@ wss.on('connection', (ws, req) => {
                 handleHit(session, session.players[username], color, shape, weapon)
             } else if (type === 'startGame') {
                 session.state = 'game'
-                session.timeLeft = 120
+                session.timeLeft = 5 * 60
                 sendToClients(session, JSON.stringify({
                     type: 'startGame',
                     playerList: getPlayerList(session)
