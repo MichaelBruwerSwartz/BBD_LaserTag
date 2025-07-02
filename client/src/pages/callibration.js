@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as tf from "@tensorflow/tfjs";
 import * as poseDetection from "@tensorflow-models/pose-detection";
-import "@mediapipe/pose";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Calibration() {
@@ -20,33 +19,47 @@ export default function Calibration() {
     let detectorInstance;
 
     async function init() {
-      await tf.ready();
+      try {
+        // Explicitly set WebGL backend and wait for it to be ready
+        await tf.setBackend("webgl");
+        await tf.ready();
+        console.log("TensorFlow.js backend set to:", tf.getBackend());
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
-        audio: false,
-      });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" },
+          audio: false,
+        });
 
-      const video = videoRef.current;
-      video.srcObject = stream;
-      await video.play();
+        const video = videoRef.current;
+        if (!video) return;
+        video.srcObject = stream;
+        await video.play();
 
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-      detectorInstance = await poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet,
-        {
-          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-        }
-      );
+        detectorInstance = await poseDetection.createDetector(
+          poseDetection.SupportedModels.MoveNet,
+          {
+            modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+          }
+        );
 
-      setDetector(detectorInstance);
-      renderLoop(detectorInstance);
+        setDetector(detectorInstance);
+        renderLoop(detectorInstance);
+      } catch (err) {
+        console.error("Initialization error:", err);
+        alert(`Failed to initialize calibration. Error: ${err.message}`);
+      }
     }
 
     init();
+
+    return () => {
+      if (detectorInstance) detectorInstance.dispose();
+    };
   }, []);
 
   function getKeypoint(keypoints, name) {
@@ -121,8 +134,6 @@ export default function Calibration() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      await tf.engine().startScope();
-
       const poses = await detector.estimatePoses(video);
       if (poses.length > 0) {
         const keypoints = poses[0].keypoints;
@@ -131,7 +142,6 @@ export default function Calibration() {
         setCapturedPose(keypoints);
       }
 
-      await tf.engine().endScope();
       requestAnimationFrame(draw);
     }
 
@@ -214,22 +224,80 @@ export default function Calibration() {
   }
 
   return (
-    <div>
-      <video
-        ref={videoRef}
-        style={{ display: "none" }}
-        playsInline
-        muted
-        autoPlay
-      ></video>
-      <canvas ref={canvasRef}></canvas>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        backgroundColor: "#1a1a1a",
+        height: "100%", // Ensure full height
+      }}
+    >
+      {/* Banner Section */}
+      <div
+        style={{
+          width: "100%",
+          minHeight: "60px", // Reduced minimum height for mobile
+          height: "10%", // Adjusted for better mobile fit
+          backgroundColor: "#800080", // Purple background
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginBottom: "0", // Remove margin to avoid gaps
+        }}
+      >
+        <img
+          src="/images/Laser-Tag-Logo.png"
+          alt="Laser Tag Logo"
+          style={{
+            maxHeight: "80px", // Reduced for mobile
+            width: "auto",
+            maxWidth: "30vw", // Smaller max width for mobile
+            objectFit: "contain",
+          }}
+        />
+      </div>
 
+      {/* Centered Camera View with Background */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          flexGrow: 1,
+          justifyContent: "center",
+          width: "100%",
+          padding: "0 10px", // Small padding for mobile
+          backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent black background
+          maxWidth: "90%", // Limit width on mobile
+          margin: "0 auto", // Center the container
+        }}
+      >
+        <video
+          ref={videoRef}
+          style={{ display: "none" }}
+          playsInline
+          muted
+          autoPlay
+        ></video>
+        <canvas
+          ref={canvasRef}
+          style={{ maxWidth: "100%", height: "auto" }} // Ensure canvas scales
+        ></canvas>
+      </div>
+
+      {/* Input and Button Section */}
       <div
         style={{
           marginTop: "1rem",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          padding: "0 10px", // Add padding for mobile
+          width: "100%",
+          maxWidth: "300px", // Limit width for better mobile layout
+          margin: "0 auto", // Center the section
         }}
       >
         <input
@@ -245,8 +313,9 @@ export default function Calibration() {
             backgroundColor: "#222",
             color: "#fff",
             marginBottom: "1rem",
-            width: "250px",
+            width: "100%",
             textAlign: "center",
+            boxSizing: "border-box",
           }}
         />
 
@@ -261,6 +330,8 @@ export default function Calibration() {
             borderRadius: "10px",
             cursor: "pointer",
             transition: "background 0.3s",
+            width: "100%",
+            boxSizing: "border-box",
           }}
         >
           📸 Capture Pose
