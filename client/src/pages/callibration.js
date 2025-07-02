@@ -22,6 +22,9 @@ export default function Calibration() {
 
   useEffect(() => {
     async function init() {
+      await tf.setBackend("webgl"); // or 'cpu' if you want a fallback
+      await tf.ready();
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
         audio: false,
@@ -37,8 +40,13 @@ export default function Calibration() {
 
       const loadedDetector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
-        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+        {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+          enableSmoothing: true,
+          runtime: "tfjs", // using TensorFlow.js runtime
+        }
       );
+
       setDetector(loadedDetector);
       renderLoop(loadedDetector);
     }
