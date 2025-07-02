@@ -422,6 +422,34 @@ export default function CameraView() {
     startCamera();
   }, []);
 
+  // This sends the streaming frame
+  useEffect(() => {
+    let intervalId;
+    if (videoRef.current && socketRef.current) {
+      const sendFrame = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const video = videoRef.current;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+
+        const frame = canvas.toDataURL("image/jpeg", 0.5); // compress for network
+        socketRef.current.send(
+          JSON.stringify({
+            type: "cameraFrame",
+            frame,
+          })
+        );
+      };
+
+      intervalId = setInterval(sendFrame, 500); // send every 500ms
+    }
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
     <div
       style={{

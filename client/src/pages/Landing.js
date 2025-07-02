@@ -33,6 +33,14 @@ export default function LandingPage() {
     });
   };
 
+  const joinSpectatorStreaming = () => {
+    navigate("/spectator_stream", {
+      state: {
+        gameCode,
+      },
+    });
+  };
+
   return (
     <div
       style={{
@@ -184,6 +192,24 @@ export default function LandingPage() {
             onMouseOut={(e) => (e.target.style.backgroundColor = "#888")}
           >
             Join as Spectator
+          </button>
+
+          <button
+            onClick={() => joinSpectatorStreaming()}
+            style={{
+              padding: "0.75rem 1.5rem",
+              fontSize: "1rem",
+              borderRadius: "5px",
+              backgroundColor: "#888",
+              border: "none",
+              cursor: "pointer",
+              color: "#fff",
+              transition: "background-color 0.3s",
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = "#666")}
+            onMouseOut={(e) => (e.target.style.backgroundColor = "#888")}
+          >
+            Join spectator streaming
           </button>
         </div>
       </div>
