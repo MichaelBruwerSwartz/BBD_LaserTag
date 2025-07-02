@@ -1,378 +1,346 @@
 /* global cv */
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import * as tf from '@tensorflow/tfjs';
+import * as poseDetection from '@tensorflow-models/pose-detection';
+import '@tensorflow/tfjs-backend-webgl';
+
 
 export default function CameraView() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const logRef = useRef(null);
+  const detectorRef = useRef(null);
   const [gunType, setGunType] = useState("pistol");
   const [zoomEnabled, setZoomEnabled] = useState(false);
-
   const navigate = useNavigate();
 
-  // Game Details
-  /*
-    TODO:
-    leaderboard: username, points
-    gameTime
-    powerup icons?
-  */
+  // Game state
   const [gameTimeString, setGameTimeString] = useState("00:00");
-
   const gunConfig = {
     pistol: { ammo: 5, reloadTime: 1000 },
     shotgun: { ammo: 2, reloadTime: 2000 },
     sniper: { ammo: 1, reloadTime: 3000 },
   };
-
   const [ammo, setAmmo] = useState(gunConfig["pistol"].ammo);
   const [isReloading, setIsReloading] = useState(false);
 
+  // Extract URL state params
   const location = useLocation();
   const { username, gameCode, codeId } = location.state || {};
 
-  // leaderboard logic
+  // Leaderboard state
   const [leaderboardData, setLeaderboardData] = useState([]);
-  const sortedPlayers = [...leaderboardData].sort(
-    (a, b) => b.points - a.points
-  );
+  const sortedPlayers = [...leaderboardData].sort((a, b) => b.points - a.points);
 
+  // WebSocket ref
   const socketRef = useRef(null);
+
+  // Connect to WebSocket & listen for game updates
   useEffect(() => {
-    if (username == null || gameCode == null || codeId == null) {
-      console.warn("Missing required values to connect WebSocket.");
+    if (!username || !gameCode || !codeId) {
+      console.warn("Missing username, gameCode or codeId");
       return;
     }
-
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&codeId=${codeId}`
     );
-
     socketRef.current = socket;
 
-    socket.onopen = () => {
-      console.log("Connected to server with WebSocket!");
-    };
-
+    socket.onopen = () => console.log("Connected to WebSocket");
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Received message from server:", data);
-
-      // Add logic here for in-game updates
       if (data.type === "gameUpdate") {
         const { players, timeLeft } = data;
-
-        // countdown
-        const mins = Math.floor(timeLeft / 60);
-        const secs = timeLeft % 60;
         setGameTimeString(
-          `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+          `${String(Math.floor(timeLeft / 60)).padStart(2, "0")}:${String(
+            timeLeft % 60
+          ).padStart(2, "0")}`
         );
-
-        // leaderboard
-        setLeaderboardData(data.players);
-
-        // check if game has ended -> forward to leaderboard
+        setLeaderboardData(players);
         if (timeLeft === 0) {
-          navigate("/player_leaderboard", {
-            state: {
-              players,
-            },
-          });
+          navigate("/player_leaderboard", { state: { players } });
         }
       }
     };
-
     socket.onclose = () => console.log("WebSocket closed");
     socket.onerror = (e) => console.error("WebSocket error", e);
 
-    return () => {
-      socket.close();
-    };
-  }, [username, gameCode, codeId]);
+    return () => socket.close();
+  }, [username, gameCode, codeId, navigate]);
 
-  // Helper function to get color name from RGB values
-  function getColorName(r, g, b) {
-    // Convert RGB to HSV for easier color classification
-    r /= 255;
-    g /= 255;
-    b /= 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
-
-    let h = 0;
-    if (delta === 0) {
-      h = 0;
-    } else if (max === r) {
-      h = ((g - b) / delta) % 6;
-    } else if (max === g) {
-      h = (b - r) / delta + 2;
-    } else {
-      h = (r - g) / delta + 4;
+  useEffect(() => {
+    async function loadDetector() {
+      // Set backend first (optional, but recommended)
+      await tf.setBackend('webgl');
+      await tf.ready();
+  
+      const detector = await poseDetection.createDetector(
+        poseDetection.SupportedModels.MoveNet,
+        {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+        }
+      );
+  
+      detectorRef.current = detector;
     }
+    loadDetector();
+  }, []);
+  
 
-    h = Math.round(h * 60);
-    if (h < 0) h += 360;
+  useEffect(() => {
+    let animationFrameId;
+  
+    async function detect() {
+      if (
+        videoRef.current &&
+        canvasRef.current &&
+        detectorRef.current
+      ) {
+        await processVideoOnce(
+          videoRef.current,
+          canvasRef.current,
+          detectorRef.current
+        );
+      }
+      animationFrameId = requestAnimationFrame(detect);
+    }
+  
+    detect();
+  
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);  
 
-    const s = max === 0 ? 0 : delta / max;
-    const v = max;
-
-    // Classify based on HSV values
-    if (v < 0.2) return "black";
-    if (s < 0.1 && v > 0.8) return "white";
-    if (s < 0.2) return "gray";
-
-    if (h < 15 || h > 345) return "red";
-    if (h >= 15 && h < 45) return "orange";
-    if (h >= 45 && h < 75) return "yellow";
-    if (h >= 75 && h < 165) return "green";
-    if (h >= 165 && h < 255) return "blue";
-    if (h >= 255 && h < 315) return "purple";
-    return "pink";
+  // Map RGB to closest CSS color name (used for hit color detection)
+  function getClosestColorName(rgbString) {
+    const cssColors = {
+      red: [255, 0, 0],
+      green: [0, 128, 0],
+      blue: [0, 0, 255],
+      yellow: [255, 255, 0],
+      purple: [128, 0, 128],
+      cyan: [0, 255, 255],
+      orange: [255, 165, 0],
+      pink: [255, 192, 203],
+      lime: [0, 255, 0],
+      navy: [0, 0, 128],
+    };
+    const [r, g, b] = rgbString.match(/\d+/g).map(Number);
+    let closestName = "";
+    let minDist = Infinity;
+    for (const [name, [cr, cg, cb]] of Object.entries(cssColors)) {
+      const dist = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
+      if (dist < minDist) {
+        minDist = dist;
+        closestName = name;
+      }
+    }
+    return closestName;
   }
 
-  // Function called when a hit is detected at center
-  function hitDetected(targetColor, targetShape) {
-    window.alert("hit the " + targetColor + " " + targetShape);
+  // Called when a hit is detected; sends hit info to server
+  function hitDetected(targetColor, msg) {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      console.warn("WebSocket not open; hit not sent");
+      return;
+    }
+    window.alert(`Hit the ${targetColor} ${msg}`);
     const hitPayload = {
       type: "hit",
       weapon: gunType,
-      shape: targetShape,
+      shape: msg,
       color: targetColor,
     };
-
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(hitPayload));
-      console.log("Sent hit:", hitPayload);
-    } else {
-      console.warn("WebSocket not open. Hit not sent.");
-    }
-
-    // Optionally update UI or log (remove alert if no longer needed)
+    socketRef.current.send(JSON.stringify(hitPayload));
     if (logRef.current) {
-      logRef.current.textContent = `Hit sent: ${targetColor} ${targetShape} with ${gunType}`;
+      logRef.current.textContent = `Hit sent: ${targetColor} ${msg} with ${gunType}`;
     }
   }
-  function processVideoOnce(video, canvas) {
+
+  // Check if torso is centered and trigger hit detection
+  function checkHit(canvas) {
+    if (canvas.isPersonCentered) {
+      const colorName = getClosestColorName(canvas.modeColor);
+      hitDetected(colorName, "torso in center");
+    } else {
+      alert("Person is not centered. Try again.");
+    }
+  }
+
+  // Process video frame once to detect pose & torso color
+  async function processVideoOnce(video, canvas, detector) {
     const width = video.videoWidth;
     const height = video.videoHeight;
-
     if (!width || !height) return;
-
+  
     canvas.width = width;
     canvas.height = height;
-
     const ctx = canvas.getContext("2d");
+  
+    // Draw current video frame
+    ctx.clearRect(0, 0, width, height);
     ctx.drawImage(video, 0, 0, width, height);
-    const imageData = ctx.getImageData(0, 0, width, height);
-
-    const src = cv.matFromImageData(imageData);
-    const gray = new cv.Mat();
-    const processed = new cv.Mat();
-    const contours = new cv.MatVector();
-    const hierarchy = new cv.Mat();
-
-    // Convert to grayscale and apply preprocessing
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-    cv.GaussianBlur(gray, processed, new cv.Size(7, 7), 1.5);
-
-    // Use adaptive thresholding for better binarization
-    cv.adaptiveThreshold(
-      processed,
-      processed,
-      255,
-      cv.ADAPTIVE_THRESH_GAUSSIAN_C,
-      cv.THRESH_BINARY_INV,
-      11,
-      2
-    );
-
-    // Morphological operations to clean up noise
-    const kernel = cv.getStructuringElement(
-      cv.MORPH_ELLIPSE,
-      new cv.Size(3, 3)
-    );
-    cv.morphologyEx(processed, processed, cv.MORPH_CLOSE, kernel);
-
-    // Find contours
-    cv.findContours(
-      processed,
-      contours,
-      hierarchy,
-      cv.RETR_TREE,
-      cv.CHAIN_APPROX_SIMPLE
-    );
-
-    // Center point of canvas to check for reticle
+  
+    if (!detector) return;
+  
+    // Estimate pose(s)
+    const poses = await detector.estimatePoses(video);
+    if (poses.length === 0) return;
+  
+    const keypoints = poses[0].keypoints;
+  
+    // Helper to get a keypoint by name
+    function getKeypoint(name) {
+      return keypoints.find((k) => k.name === name || k.part === name);
+    }
+  
+    // Get shoulder and hip points
+    const ls = getKeypoint("left_shoulder");
+    const rs = getKeypoint("right_shoulder");
+    const lh = getKeypoint("left_hip");
+    const rh = getKeypoint("right_hip");
+  
+    if (!ls || !rs || !lh || !rh) return;
+  
+    // Draw torso polygon connecting these four points
+    const points = [ls, rs, rh, lh];
+  
+    // Draw filled torso polygon with translucent fill color
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.closePath();
+  
+    // Sample the mode color inside the rectangle formed by shoulders
+    function getModeColorFromPoints(p1, p2) {
+      const minX = Math.floor(Math.min(p1.x, p2.x));
+      const minY = Math.floor(Math.min(p1.y, p2.y));
+      const width = Math.floor(Math.abs(p1.x - p2.x));
+      const height = Math.floor(Math.abs(p1.y - p2.y));
+      if (width < 1 || height < 1) return "aqua";
+  
+      const imgData = ctx.getImageData(minX, minY, width, height);
+      const colorCount = new Map();
+  
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const r = imgData.data[i];
+        const g = imgData.data[i + 1];
+        const b = imgData.data[i + 2];
+        const key = `${r},${g},${b}`;
+        colorCount.set(key, (colorCount.get(key) || 0) + 1);
+      }
+  
+      let modeColor = "aqua";
+      let maxCount = 0;
+      for (const [key, count] of colorCount.entries()) {
+        if (count > maxCount) {
+          maxCount = count;
+          modeColor = `rgb(${key})`;
+        }
+      }
+      return modeColor;
+    }
+  
+    const modeColor = getModeColorFromPoints(ls, rs);
+    const rgbaColor = modeColor.replace("rgb(", "rgba(").replace(")", ", 0.3)");
+  
+    ctx.fillStyle = rgbaColor;
+    ctx.fill();
+  
+    ctx.strokeStyle = modeColor;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  
+    // Draw keypoints as small circles (only if score > 0.5)
+    keypoints.forEach((kp) => {
+      if (kp.score > 0.5) {
+        ctx.beginPath();
+        ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = "aqua";
+        ctx.fill();
+      }
+    });
+  
+    // Draw a permanent red dot in center of canvas (reticle)
     const centerX = width / 2;
     const centerY = height / 2;
-
-    // Process contours
-    for (let i = 0; i < contours.size(); ++i) {
-      const cnt = contours.get(i);
-      const area = cv.contourArea(cnt);
-      const perimeter = cv.arcLength(cnt, true);
-
-      // Filter small contours and noise
-      if (area < 100 || perimeter < 30) {
-        cnt.delete();
-        continue;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 7, 0, 2 * Math.PI);
+    ctx.fillStyle = "red";
+    ctx.fill();
+  
+    // Check if person is standing roughly centered:
+    // We consider centered if centerX,centerY lies inside torso polygon (simple point-in-polygon)
+    function pointInPolygon(point, vs) {
+      let x = point[0],
+        y = point[1];
+      let inside = false;
+      for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        let xi = vs[i].x,
+          yi = vs[i].y;
+        let xj = vs[j].x,
+          yj = vs[j].y;
+  
+        let intersect =
+          yi > y !== yj > y &&
+          x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+        if (intersect) inside = !inside;
       }
-
-      const approx = new cv.Mat();
-      cv.approxPolyDP(cnt, approx, 0.015 * perimeter, true);
-      const vertices = approx.rows;
-
-      const hull = new cv.Mat();
-      cv.convexHull(cnt, hull);
-      const hullArea = cv.contourArea(hull);
-      const solidity = hullArea > 0 ? area / hullArea : 0;
-
-      let shape = "";
-      if (vertices === 3) {
-        // Triangle detection with additional validation
-        const triRect = cv.boundingRect(approx);
-        const triangleAspectRatio =
-          Math.max(triRect.width, triRect.height) /
-          Math.min(triRect.width, triRect.height);
-        if (solidity > 0.85 && triangleAspectRatio < 2.5) {
-          shape = "triangle";
-        }
-      } else if (vertices === 4) {
-        const rect = cv.minAreaRect(cnt);
-        const aspectRatio =
-          Math.max(rect.size.width, rect.size.height) /
-          Math.min(rect.size.width, rect.size.height);
-        shape = aspectRatio > 1.2 ? "Rectangle" : "Square";
-      } else {
-        // Circle detection
-        if (vertices > 6) {
-          const circleArea = Math.PI * Math.pow(Math.sqrt(area / Math.PI), 2);
-          const circularity = (4 * Math.PI * area) / (perimeter * perimeter);
-          const areaRatio = Math.abs(area - circleArea) / area;
-
-          if (circularity > 0.7 && areaRatio < 0.3 && solidity > 0.8) {
-            shape = "Circle";
-          }
-        }
-      }
-
-      if (shape) {
-        // Check if the center point lies within the contour (reticle inside)
-        const dist = cv.pointPolygonTest(
-          cnt,
-          new cv.Point(centerX, centerY),
-          false
-        );
-
-        // Create mask and get color
-        const mask = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
-        cv.drawContours(mask, contours, i, new cv.Scalar(255), -1);
-        const meanColor = cv.mean(src, mask);
-        mask.delete();
-        const r = Math.round(meanColor[0]);
-        const g = Math.round(meanColor[1]);
-        const b = Math.round(meanColor[2]);
-        const colorName = getColorName(r, g, b);
-
-        if (
-          (shape === "triangle" ||
-            shape === "rectangle" ||
-            shape === "sqaure") &&
-          dist >= 0
-        ) {
-          hitDetected(colorName, "triangle");
-        }
-
-        // Draw contour
-        ctx.strokeStyle = "lime";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        const data = cnt.data32S;
-        for (let j = 0; j < cnt.rows; j++) {
-          const x = data[j * 2];
-          const y = data[j * 2 + 1];
-          if (j === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.stroke();
-
-        // Draw label
-        const moments = cv.moments(cnt);
-        if (moments.m00 !== 0) {
-          const cx = Math.round(moments.m10 / moments.m00);
-          const cy = Math.round(moments.m01 / moments.m00);
-          ctx.fillStyle = "red";
-          ctx.font = "bold 18px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(`${colorName} ${shape}`, cx, cy - 15);
-        }
-      }
-
-      approx.delete();
-      hull.delete();
-      cnt.delete();
+      return inside;
     }
-
-    // Clean up memory
-    src.delete();
-    gray.delete();
-    processed.delete();
-    kernel.delete();
-    contours.delete();
-    hierarchy.delete();
+  
+    const isCentered = pointInPolygon([centerX, centerY], points);
+  
+    // Attach to canvas for external use (e.g., button click)
+    canvas.isPersonCentered = isCentered;
+    canvas.modeColor = modeColor;
   }
+  
 
+  // Shoot button handler
   const handleShoot = () => {
-    if (isReloading) return; // disable shooting while reloading
-
+    if (isReloading) return;
     if (ammo <= 0) {
-      reload(); // trigger automatic reload
+      reload();
       return;
     }
-
-    console.log(`Shoot button clicked with ${gunType}!`);
-    setAmmo(ammo - 1);
-
-    if (navigator.vibrate) {
-      navigator.vibrate([75, 25, 75]);
+    setAmmo((a) => a - 1);
+    if (navigator.vibrate) navigator.vibrate([75, 25, 75]);
+    if (canvasRef.current) {
+      checkHit(canvasRef.current);
     }
-
-    // if (window.cv && videoRef.current && canvasRef.current) {
-    //   processVideoOnce(videoRef.current, canvasRef.current);
-    // }
   };
 
+  // Gun selection handler
   const selectGun = (type) => {
     setGunType(type);
     setAmmo(gunConfig[type].ammo);
-    setIsReloading(false); // cancel reload when switching guns
-
+    setIsReloading(false);
     setZoomEnabled(false);
     if (videoRef.current) {
-      videoRef.current.style.transform =
-        type === "sniper" ? "scale(3)" : "scale(1)";
+      videoRef.current.style.transform = type === "sniper" ? "scale(3)" : "scale(1)";
       videoRef.current.style.transformOrigin = "center center";
     }
   };
 
+  // Reload gun
   const reload = () => {
     if (isReloading) return;
     setIsReloading(true);
-
-    const reloadTime = gunConfig[gunType].reloadTime;
-
     setTimeout(() => {
       setAmmo(gunConfig[gunType].ammo);
       setIsReloading(false);
-    }, reloadTime);
+    }, gunConfig[gunType].reloadTime);
   };
 
+  // Disable zoom gestures unless zoomEnabled
   useEffect(() => {
+    if (zoomEnabled) return;
+
     const preventZoom = (e) => e.preventDefault();
     let lastTouch = 0;
     const doubleTapBlocker = (e) => {
@@ -381,82 +349,52 @@ export default function CameraView() {
       lastTouch = now;
     };
 
-    if (!zoomEnabled) {
-      document.addEventListener("gesturestart", preventZoom, {
-        passive: false,
-      });
-      document.addEventListener("dblclick", preventZoom, { passive: false });
-      document.addEventListener("touchend", doubleTapBlocker, {
-        passive: false,
-      });
+    document.addEventListener("gesturestart", preventZoom, { passive: false });
+    document.addEventListener("dblclick", preventZoom, { passive: false });
+    document.addEventListener("touchend", doubleTapBlocker, { passive: false });
 
-      return () => {
-        document.removeEventListener("gesturestart", preventZoom);
-        document.removeEventListener("dblclick", preventZoom);
-        document.removeEventListener("touchend", doubleTapBlocker);
-      };
-    }
+    return () => {
+      document.removeEventListener("gesturestart", preventZoom);
+      document.removeEventListener("dblclick", preventZoom);
+      document.removeEventListener("touchend", doubleTapBlocker);
+    };
   }, [zoomEnabled]);
 
+  // Start camera
   useEffect(() => {
-    const startCamera = async () => {
+    async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
           audio: false,
         });
-        videoRef.current.srcObject = stream;
-
-        setTimeout(() => {
-          const video = videoRef.current;
-          if (!video) return;
-
-          const rect = video.getBoundingClientRect();
-          const centerX = rect.left + rect.width / 2;
-          const centerY = rect.top + rect.height / 2;
-
-          const fireFakeClick = () => {
-            const evt = new MouseEvent("click", {
-              bubbles: true,
-              cancelable: true,
-              clientX: centerX,
-              clientY: centerY,
-              view: window,
-            });
-            document.elementFromPoint(centerX, centerY)?.dispatchEvent(evt);
-          };
-
-          fireFakeClick();
-          setTimeout(fireFakeClick, 200);
-        }, 1000);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
       } catch (err) {
         console.error("Camera error:", err);
         alert("Camera access denied. Please allow permissions.");
       }
-    };
-
+    }
     startCamera();
   }, []);
 
-  // This sends the streaming frame
+  // Send camera frames periodically to server via WebSocket
   useEffect(() => {
     let intervalId;
 
-    const checkAndStartStreaming = () => {
+    const sendFrames = () => {
       const video = videoRef.current;
       const socket = socketRef.current;
-
       if (!video || !socket) return;
 
       if (socket.readyState === WebSocket.OPEN) {
         intervalId = setInterval(() => {
           const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
+          const ctx = canvas.getContext("2d");
           ctx.drawImage(video, 0, 0);
-
           const frame = canvas.toDataURL("image/jpeg", 0.5);
 
           socket.send(
@@ -468,20 +406,19 @@ export default function CameraView() {
           );
         }, 100);
       } else {
-        // Wait and retry until socket is open
+        // Wait for socket to open then start
         const waitForSocket = setInterval(() => {
           if (socket.readyState === WebSocket.OPEN) {
             clearInterval(waitForSocket);
-            checkAndStartStreaming(); // try again
+            sendFrames();
           }
         }, 100);
       }
     };
 
-    checkAndStartStreaming();
-
+    sendFrames();
     return () => clearInterval(intervalId);
-  }, []);
+  }, [username]);
 
   return (
     <div
@@ -521,7 +458,8 @@ export default function CameraView() {
           height: "100%",
           pointerEvents: "none",
         }}
-      ></canvas>
+      />
+
       <div
         ref={logRef}
         style={{
@@ -532,7 +470,7 @@ export default function CameraView() {
           color: "white",
           zIndex: 4,
         }}
-      ></div>
+      />
 
       <div
         style={{
@@ -572,7 +510,6 @@ export default function CameraView() {
             gap: "20px",
           }}
         >
-          {/* Gun & Bullets (vertically aligned) */}
           <div
             style={{
               display: "flex",
@@ -594,7 +531,7 @@ export default function CameraView() {
               style={{
                 width: "150px",
                 height: "150px",
-                cursor: "pointer",
+                cursor: isReloading ? "not-allowed" : "pointer",
                 transition: "transform 0.1s ease-in-out",
               }}
               onTouchStart={(e) => {
@@ -604,8 +541,6 @@ export default function CameraView() {
                 e.currentTarget.style.transform = "scale(1)";
               }}
             />
-
-            {/* Bullet icons */}
             <div style={{ display: "flex", gap: "4px", marginTop: "10px" }}>
               {Array.from({ length: ammo }).map((_, i) => (
                 <img
@@ -617,7 +552,6 @@ export default function CameraView() {
               ))}
             </div>
           </div>
-
           {isReloading && (
             <div
               style={{
@@ -649,134 +583,61 @@ export default function CameraView() {
           <button onClick={() => selectGun("shotgun")}>💥 Shotgun</button>
           <button onClick={() => selectGun("sniper")}>🎯 Sniper</button>
         </div>
-        <div style={{ display: "flex" }}>
-          <div
-            style={{
-              position: "absolute",
-              top: "2%",
-              left: "50%",
-              transform: "translateX(-50%)",
-              color: "white",
-              fontSize: "18px",
-              fontWeight: "bold",
-              backgroundColor: "rgba(0, 0, 0, 0.6)",
-              padding: "6px 12px",
-              borderRadius: "8px",
-              zIndex: 5,
-            }}
-          >
-            {gameTimeString}
-          </div>
-        </div>
 
-        {/* leaderboard */}
         <div
           style={{
             position: "absolute",
             top: "2%",
-            left: "2%",
-            backgroundColor: "rgba(31, 41, 55, 0.6)", // <- updated transparency
-            border: "2px solid rgba(55, 65, 81, 0.7)", // <- softened border
-            borderRadius: "12px",
-            padding: "12px",
-            maxWidth: "120px",
-            maxHeight: "300px",
-            overflowY: "auto",
-            boxShadow: "0 8px 25px rgba(0, 0, 0, 0.4)",
-            color: "#ffffff",
-            fontFamily:
-              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            fontSize: "10px",
-            zIndex: 1000,
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "white",
+            fontSize: "18px",
+            fontWeight: "bold",
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            padding: "6px 12px",
+            borderRadius: "8px",
+            zIndex: 5,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: "12px",
-              paddingBottom: "8px",
-              borderBottom: "1px solid #4b5563",
-            }}
-          >
-            <span style={{ fontSize: "8px", marginRight: "8px" }}>🏆</span>
-            <h3
+          {gameTimeString}
+        </div>
+
+        {/* Leaderboard */}
+        <div
+          style={{
+            position: "absolute",
+            top: "10%",
+            right: "10px",
+            backgroundColor: "rgba(0,0,0,0.7)",
+            padding: "10px",
+            borderRadius: "8px",
+            maxHeight: "50vh",
+            overflowY: "auto",
+            width: "200px",
+            color: "white",
+            fontSize: "14px",
+            zIndex: 5,
+          }}
+        >
+          <h3 style={{ margin: "0 0 10px 0", textAlign: "center" }}>
+            Leaderboard
+          </h3>
+          {sortedPlayers.map(({ username, points, kills }, i) => (
+            <div
+              key={username}
               style={{
-                margin: 0,
-                fontSize: "16px",
-                fontWeight: "600",
-                color: "#f3f4f6",
+                backgroundColor: i === 0 ? "gold" : i === 1 ? "silver" : "",
+                fontWeight: i === 0 ? "bold" : "normal",
+                marginBottom: "6px",
+                padding: "4px",
+                borderRadius: "4px",
               }}
             >
-              Leaderboard
-            </h3>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {sortedPlayers.length > 0 ? (
-              sortedPlayers.slice(0, 3).map((player, index) => (
-                <div
-                  key={player.username}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "8px 12px",
-                    backgroundColor:
-                      index === 0
-                        ? "#fbbf24"
-                        : index === 1
-                        ? "#c0c0c0"
-                        : index === 2
-                        ? "#cd7f32"
-                        : "#374151",
-                    color: index < 3 ? "#000000" : "#ffffff",
-                    borderRadius: "8px",
-                    fontWeight: index < 3 ? "600" : "400",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: "700",
-                        minWidth: "20px",
-                      }}
-                    >
-                      #{index + 1}
-                    </span>
-                    <span style={{ fontWeight: "500" }}>{player.username}</span>
-                  </div>
-                  <span
-                    style={{
-                      fontWeight: "600",
-                      fontSize: "10px",
-                    }}
-                  >
-                    {player.points}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  color: "#9ca3af",
-                  fontStyle: "italic",
-                  padding: "16px",
-                }}
-              >
-                No players yet
+              <div>
+                {username} - Points: {points} Kills: {kills}
               </div>
-            )}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
