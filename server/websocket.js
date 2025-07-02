@@ -229,14 +229,17 @@ wss.on("connection", (ws, req) => {
         );
       } else if (type === "cameraFrame") {
         const { frame } = message;
-        console.log("THIS IS THE FRAME" + frame);
+        session.latestFrames[username] = frame;
+
+        // Send all frames to spectators
         const spectatorMessage = JSON.stringify({
-          type: "cameraFrame",
-          username,
-          frame,
+          type: "cameraFramesBatch",
+          frames: Object.entries(session.latestFrames).map(([user, frame]) => ({
+            username: user,
+            frame,
+          })),
         });
 
-        // Broadcast only to spectators
         sendToClients(session, spectatorMessage, false, true);
       }
     });

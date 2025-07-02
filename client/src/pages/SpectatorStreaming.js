@@ -2,12 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 export default function SpectatorStreaming() {
-  const [playerStreams, setPlayerStreams] = useState({});
+  const [frames, setFrames] = useState([]); // Array of { username, frame }
   const [currentIndex, setCurrentIndex] = useState(0);
   const socketRef = useRef(null);
-
-  const usernames = Object.keys(playerStreams);
-  const currentUsername = usernames[currentIndex];
 
   const location = useLocation();
   const { gameCode } = location.state || {};
@@ -25,11 +22,8 @@ export default function SpectatorStreaming() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === "cameraFrame" && data.username && data.frame) {
-        setPlayerStreams((prev) => ({
-          ...prev,
-          [data.username]: data.frame,
-        }));
+      if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
+        setFrames(data.frames); // replaces the whole frame list each time
       }
     };
 
@@ -47,14 +41,14 @@ export default function SpectatorStreaming() {
   }, [gameCode]);
 
   const goToNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % usernames.length);
+    setCurrentIndex((prev) => (prev + 1) % frames.length);
   };
 
   const goToPrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + usernames.length) % usernames.length);
+    setCurrentIndex((prev) => (prev - 1 + frames.length) % frames.length);
   };
 
-  console.log(usernames);
+  const current = frames[currentIndex];
 
   return (
     <div
@@ -70,15 +64,15 @@ export default function SpectatorStreaming() {
       }}
     >
       <h2 style={{ marginBottom: "20px" }}>
-        {usernames.length > 0
-          ? `Viewing: ${currentUsername}`
+        {current
+          ? `Viewing: ${current.username}`
           : "Waiting for player streams..."}
       </h2>
 
-      {currentUsername && playerStreams[currentUsername] && (
+      {current?.frame && (
         <img
-          src={playerStreams[currentUsername]}
-          alt={`Live stream from ${currentUsername}`}
+          src={current.frame}
+          alt={`Live stream from ${current.username}`}
           style={{
             width: "90%",
             maxWidth: "800px",
@@ -90,36 +84,38 @@ export default function SpectatorStreaming() {
         />
       )}
 
-      <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
-        <button
-          onClick={goToPrev}
-          style={{
-            fontSize: "24px",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            border: "none",
-            backgroundColor: "#1f2937",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          GO TO PREVIOUS PLAYER
-        </button>
-        <button
-          onClick={goToNext}
-          style={{
-            fontSize: "24px",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            border: "none",
-            backgroundColor: "#1f2937",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          GO TO NEXT PLAYER
-        </button>
-      </div>
+      {frames.length > 1 && (
+        <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
+          <button
+            onClick={goToPrev}
+            style={{
+              fontSize: "24px",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#1f2937",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            ← Previous
+          </button>
+          <button
+            onClick={goToNext}
+            style={{
+              fontSize: "24px",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#1f2937",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
