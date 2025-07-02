@@ -24,7 +24,7 @@ const exampleSession = {
       codeId: 0, // 0 - 9 for players
       points: 0,
       hitsGiven: 0,
-      hitsReceived: 0
+      hitsReceived: 0,
     },
   },
   spectators: {

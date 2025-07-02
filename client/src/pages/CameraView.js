@@ -34,7 +34,9 @@ export default function CameraView() {
 
   // leaderboard logic
   const [leaderboardData, setLeaderboardData] = useState([]);
-  const sortedPlayers = [...leaderboardData].sort((a, b) => b.points - a.points);
+  const sortedPlayers = [...leaderboardData].sort(
+    (a, b) => b.points - a.points
+  );
 
   const socketRef = useRef(null);
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function CameraView() {
     }
 
     const socket = new WebSocket(
-      `ws://localhost:4000/session/${gameCode}?username=${username}&codeId=${codeId}` // wss://bbd-lasertag.onrender.com
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&codeId=${codeId}`
     );
 
     socketRef.current = socket;
@@ -75,8 +77,8 @@ export default function CameraView() {
         if (timeLeft === 0) {
           navigate("/leaderboard", {
             state: {
-              players
-            }
+              players,
+            },
           });
         }
       }
@@ -584,8 +586,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                    ? "/sniper.png"
-                    : "/pistol.png"
+                  ? "/sniper.png"
+                  : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
@@ -724,10 +726,10 @@ export default function CameraView() {
                       index === 0
                         ? "#fbbf24"
                         : index === 1
-                          ? "#c0c0c0"
-                          : index === 2
-                            ? "#cd7f32"
-                            : "#374151",
+                        ? "#c0c0c0"
+                        : index === 2
+                        ? "#cd7f32"
+                        : "#374151",
                     color: index < 3 ? "#000000" : "#ffffff",
                     borderRadius: "8px",
                     fontWeight: index < 3 ? "600" : "400",
