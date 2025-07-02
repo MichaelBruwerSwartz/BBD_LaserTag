@@ -257,13 +257,7 @@ export default function Calibration() {
 
   return (
     <div>
-      <video
-        ref={videoRef}
-        style={{ display: "none" }}
-        playsInline
-        muted
-        autoPlay
-      ></video>
+      <video ref={videoRef} playsInline muted autoPlay></video>
       <canvas ref={canvasRef}></canvas>
 
       <div

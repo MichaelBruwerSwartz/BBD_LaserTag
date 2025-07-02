@@ -17,15 +17,15 @@ export default function PlayerLobby() {
   const socketRef = useRef(null);
 
   const { state } = useLocation();
-  const { gameCode, username } = state || {};
+  const { gameCode, username, color } = state || {};
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!gameCode || !username) return;
+    if (!gameCode || !username || color) return;
     if (socketRef.current) return;
 
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}`
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
     );
     socketRef.current = socket;
 
