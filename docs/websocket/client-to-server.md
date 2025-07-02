@@ -39,7 +39,7 @@ field1: 'any data'
 field2: 'any data'
 ```
 
-Types:
+## Types
 
 ### `hit`
 

@@ -79,6 +79,18 @@ setInterval(() => {
 
             if (session.timeLeft <= 0) {
                 session.state = "finished";
+            } else {
+                // powerups
+                const powerups = ['invincibility', 'instakill']
+                for (let player of Object.values(session.players)) {
+                    if (Math.random() < 0.01) {
+                        player.connection.send(JSON.stringify({
+                            type: 'powerup',
+                            powerup: powerups[Math.floor(Math.random() * powerups.length)],
+                            duration: 10
+                        }));
+                    }
+                }
             }
         }
     }
@@ -171,6 +183,7 @@ wss.on("connection", (ws, req) => {
             hitsGiven: 0,
             hitsTaken: 0,
             points: 50,
+            activePowerups: {}
         };
 
         // send player joined message
