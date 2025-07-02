@@ -10,8 +10,8 @@ export default function Calibration() {
   const socketRef = useRef(null);
   const [detector, setDetector] = useState(null);
   const [capturedPose, setCapturedPose] = useState(null);
-  const [capturedColor, setCapturedColor] = useState(null);
   const [username, setUsername] = useState("");
+  const lastSentColorRef = useRef(null); // ✅ Ref to track last sent color
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,7 +30,6 @@ export default function Calibration() {
 
       const video = videoRef.current;
       video.srcObject = stream;
-
       await video.play();
 
       const canvas = canvasRef.current;
@@ -45,13 +44,13 @@ export default function Calibration() {
       );
 
       setDetector(detectorInstance);
-      renderLoop(detectorInstance); // ✅ start scanning loop after everything is ready
+      renderLoop(detectorInstance);
     }
 
     init();
 
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}/check_color?color=${capturedColor}`
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}/check_color`
     );
     socketRef.current = socket;
 
@@ -67,7 +66,7 @@ export default function Calibration() {
         if (data.available) {
           navigate("/player_lobby", {
             state: {
-              color: capturedColor,
+              color: lastSentColorRef.current ?? "unknown",
               username,
               gameCode,
             },
@@ -92,7 +91,7 @@ export default function Calibration() {
       socket.close();
       if (detectorInstance?.dispose) detectorInstance.dispose();
     };
-  }, [gameCode, navigate, capturedColor]);
+  }, [gameCode, navigate, username]);
 
   function getKeypoint(keypoints, name) {
     return keypoints.find((k) => k.name === name || k.part === name);
@@ -213,7 +212,7 @@ export default function Calibration() {
     }
 
     const modeColor = getModeColorFromPoints(ctx, ls, rs);
-    setCapturedColor(modeColor);
+    lastSentColorRef.current = modeColor; // ✅ save color in ref
 
     const message = {
       type: "calibration",
