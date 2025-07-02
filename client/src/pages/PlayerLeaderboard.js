@@ -34,7 +34,7 @@ const PlayerLeaderboard = () => {
     }
 
     // Use the correct WebSocket URL for post-game data (optional, for future backend integration)
-    const socket = new WebSocket(`ws://localhost:4000/session/${gameCode}/postgame`);
+    const socket = new WebSocket(`wss://bbd-lasertag.onrender.com/session/${gameCode}/postgame`);
     socketRef.current = socket;
 
     socket.onmessage = (event) => {
