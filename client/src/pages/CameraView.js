@@ -1,10 +1,9 @@
 /* global cv */
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import * as tf from '@tensorflow/tfjs';
-import * as poseDetection from '@tensorflow-models/pose-detection';
-import '@tensorflow/tfjs-backend-webgl';
-
+import * as tf from "@tensorflow/tfjs";
+import * as poseDetection from "@tensorflow-models/pose-detection";
+import "@tensorflow/tfjs-backend-webgl";
 
 export default function CameraView() {
   const videoRef = useRef(null);
@@ -31,14 +30,16 @@ export default function CameraView() {
 
   // Leaderboard state
   const [leaderboardData, setLeaderboardData] = useState([]);
-  const sortedPlayers = [...leaderboardData].sort((a, b) => b.points - a.points);
+  const sortedPlayers = [...leaderboardData].sort(
+    (a, b) => b.points - a.points
+  );
 
   // WebSocket ref
   const socketRef = useRef(null);
 
   // Connect to WebSocket & listen for game updates
   useEffect(() => {
-    console.log(username, gameCode, color)
+    console.log(username, gameCode, color);
     if (username == null || gameCode == null || color == null) {
       console.warn("Missing username, gameCode or color");
       return;
@@ -73,7 +74,7 @@ export default function CameraView() {
   useEffect(() => {
     async function loadDetector() {
       // Set backend first (optional, but recommended)
-      await tf.setBackend('webgl');
+      await tf.setBackend("webgl");
       await tf.ready();
 
       const detector = await poseDetection.createDetector(
@@ -88,16 +89,11 @@ export default function CameraView() {
     loadDetector();
   }, []);
 
-
   useEffect(() => {
     let animationFrameId;
 
     async function detect() {
-      if (
-        videoRef.current &&
-        canvasRef.current &&
-        detectorRef.current
-      ) {
+      if (videoRef.current && canvasRef.current && detectorRef.current) {
         await processVideoOnce(
           videoRef.current,
           canvasRef.current,
@@ -108,7 +104,7 @@ export default function CameraView() {
     }
 
     detect();
-/*
+    /*
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
@@ -288,8 +284,7 @@ export default function CameraView() {
           yj = vs[j].y;
 
         let intersect =
-          yi > y !== yj > y &&
-          x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+          yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
         if (intersect) inside = !inside;
       }
       return inside;
@@ -301,7 +296,6 @@ export default function CameraView() {
     canvas.isPersonCentered = isCentered;
     canvas.modeColor = modeColor;
   }
-
 
   // Shoot button handler
   const handleShoot = () => {
@@ -324,7 +318,8 @@ export default function CameraView() {
     setIsReloading(false);
     setZoomEnabled(false);
     if (videoRef.current) {
-      videoRef.current.style.transform = type === "sniper" ? "scale(3)" : "scale(1)";
+      videoRef.current.style.transform =
+        type === "sniper" ? "scale(3)" : "scale(1)";
       videoRef.current.style.transformOrigin = "center center";
     }
   };
@@ -525,8 +520,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                    ? "/sniper.png"
-                    : "/pistol.png"
+                  ? "/sniper.png"
+                  : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
@@ -608,35 +603,44 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            top: "10%",
-            right: "10px",
+            top: "10px",
+            left: "10px",
             backgroundColor: "rgba(0,0,0,0.7)",
-            padding: "10px",
-            borderRadius: "8px",
-            maxHeight: "50vh",
+            padding: "8px",
+            borderRadius: "6px",
+            maxHeight: "35vh",
             overflowY: "auto",
-            width: "200px",
+            width: "150px",
             color: "white",
-            fontSize: "14px",
+            fontSize: "12px",
             zIndex: 5,
           }}
         >
-          <h3 style={{ margin: "0 0 10px 0", textAlign: "center" }}>
+          <h4
+            style={{
+              margin: "0 0 6px 0",
+              textAlign: "center",
+              fontSize: "14px",
+            }}
+          >
             Leaderboard
-          </h3>
+          </h4>
           {sortedPlayers.map(({ username, points, kills }, i) => (
             <div
               key={username}
               style={{
                 backgroundColor: i === 0 ? "gold" : i === 1 ? "silver" : "",
                 fontWeight: i === 0 ? "bold" : "normal",
-                marginBottom: "6px",
-                padding: "4px",
-                borderRadius: "4px",
+                marginBottom: "4px",
+                padding: "3px",
+                borderRadius: "3px",
+                fontSize: "11px",
               }}
             >
               <div>
-                {username} - Points: {points} Kills: {kills}
+                {username}
+                <br />
+                Pts: {points} | K: {kills}
               </div>
             </div>
           ))}
