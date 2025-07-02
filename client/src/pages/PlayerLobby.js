@@ -50,7 +50,7 @@ export default function PlayerLobby() {
           state: {
             username,
             gameCode,
-            color: currentPlayer?.codeId,
+            codeId: currentPlayer?.codeId,
           },
         });
       }
