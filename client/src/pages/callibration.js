@@ -8,6 +8,7 @@ export default function Calibration() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
+  const usernameRef = useRef("");
   const [detector, setDetector] = useState(null);
   const [capturedPose, setCapturedPose] = useState(null);
   const [username, setUsername] = useState("");
@@ -67,7 +68,7 @@ export default function Calibration() {
           navigate("/player_lobby", {
             state: {
               color: getClosestColorName(lastSentColorRef.current) ?? "unknown",
-              username,
+              username: usernameRef.current,
               gameCode,
             },
           });
@@ -297,7 +298,10 @@ export default function Calibration() {
         <input
           type="text"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => {
+            setUsername(e.target.value);
+            usernameRef.current = e.target.value;
+          }}
           placeholder="Enter your username"
           style={{
             padding: "0.75rem 1.25rem",
