@@ -164,8 +164,6 @@ export default function CameraView() {
     if (canvas.isPersonCentered) {
       const colorName = getClosestColorName(canvas.modeColor);
       hitDetected(colorName, "torso in center");
-    } else {
-      alert("Person is not centered. Try again.");
     }
   }
 
@@ -375,7 +373,7 @@ export default function CameraView() {
         alert(`Camera access denied. Please allow permissions.\n\nError: ${err.message}`);
       }
     }
-    setTimeout(startCamera, 5000) // delay to prevent error of not starting and make it work more consistently
+    startCamera();
   }, []);
 
   // Send camera frames periodically to server via WebSocket

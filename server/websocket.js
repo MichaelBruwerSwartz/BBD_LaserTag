@@ -280,6 +280,8 @@ wss.on("connection", (ws, req) => {
 });
 
 function handleHit(session, player, color, weapon) {
+    if (color === 'cyan') return // invalid color
+
     // get target player from color
     let target;
 
@@ -306,7 +308,7 @@ function handleHit(session, player, color, weapon) {
 
     // update hits
     player.hitsGiven++
-    target.hitsReceived++
+    target.hitsTaken++
 
     sendToClients(
         session,
