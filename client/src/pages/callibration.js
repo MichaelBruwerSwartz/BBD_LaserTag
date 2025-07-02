@@ -88,16 +88,16 @@ export default function Calibration() {
   // Map RGB to closest CSS color name (used for hit color detection)
   function getClosestColorName(rgbString) {
     const cssColors = {
+      white: [255, 255, 255],
+      black: [0, 0, 0],
       red: [255, 0, 0],
-      green: [0, 128, 0],
-      blue: [0, 0, 255],
+      orange: [255, 128, 0],
       yellow: [255, 255, 0],
-      purple: [128, 0, 128],
-      cyan: [0, 255, 255],
-      orange: [255, 165, 0],
-      pink: [255, 192, 203],
-      lime: [0, 255, 0],
-      navy: [0, 0, 128],
+      green: [0, 180, 0],
+      blue: [0, 128, 255],
+      purple: [128, 0, 255],
+      pink: [255, 0, 255],
+      aqua: [0, 255, 255]
     };
     const [r, g, b] = rgbString.match(/\d+/g).map(Number);
     let closestName = "";
@@ -109,6 +109,7 @@ export default function Calibration() {
         closestName = name;
       }
     }
+    console.log(`cal RGB string: ${rgbString} | closest color: ${closestName}`)
     return closestName;
   }
 

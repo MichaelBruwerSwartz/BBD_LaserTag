@@ -1,18 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-const colorMap = {
-  white: "#FFFFFF",
-  black: "#323232",       // softened black
-  red: "#FFB3BA",
-  orange: "#FFCC99",
-  yellow: "#FFFFCC",
-  green: "#CCFFCC",
-  blue: "#ADD8E6",
-  purple: "#DABBFF",
-  pink: "#FFC0CB",
-};
-
 export default function PlayerLobby() {
   const [players, setPlayers] = useState([]);
   const [adminUsername, setAdminUsername] = useState("");
@@ -214,9 +202,7 @@ export default function PlayerLobby() {
             <li
               key={playerName}
               style={{
-                background: `linear-gradient(135deg, ${colorMap[color] || "#ddd"
-                  } 0%, ${colorMap[color] || "#ddd"
-                  } 70%, rgba(255,255,255,0.1) 100%)`,
+                backgroundColor: color,
                 color: "#333",
                 padding: "1rem",
                 marginBottom: "1.5rem",

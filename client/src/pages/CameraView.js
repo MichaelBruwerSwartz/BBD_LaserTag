@@ -147,7 +147,8 @@ export default function CameraView() {
       green: [0, 180, 0],
       blue: [0, 128, 255],
       purple: [128, 0, 255],
-      pink: [255, 0, 255]
+      pink: [255, 0, 255],
+      aqua: [0, 255, 255]
     };
     const [r, g, b] = rgbString.match(/\d+/g).map(Number);
     let closestName = "";
@@ -159,7 +160,7 @@ export default function CameraView() {
         closestName = name;
       }
     }
-    console.log(`RGB string: ${rgbString} | closest color: ${closestName}`)
+    console.log(`camv RGB string: ${rgbString} | closest color: ${closestName}`)
     return closestName;
   }
 
