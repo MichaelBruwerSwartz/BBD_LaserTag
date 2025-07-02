@@ -54,6 +54,8 @@ export default function SpectatorStreaming() {
     setCurrentIndex((prev) => (prev - 1 + usernames.length) % usernames.length);
   };
 
+  console.log(usernames);
+
   return (
     <div
       style={{
