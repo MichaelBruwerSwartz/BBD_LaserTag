@@ -91,7 +91,7 @@ export default function Calibration() {
       socket.close();
       if (detectorInstance?.dispose) detectorInstance.dispose();
     };
-  }, [gameCode, navigate]);
+  }, []);
 
   function getKeypoint(keypoints, name) {
     return keypoints.find((k) => k.name === name || k.part === name);
