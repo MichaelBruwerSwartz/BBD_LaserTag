@@ -5,6 +5,7 @@ export default function SpectatorStreaming() {
   const [frameMap, setFrameMap] = useState(new Map());
   const [usernames, setUsernames] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [playerStats, setPlayerStats] = useState([]);
   const socketRef = useRef(null);
 
   const location = useLocation();
@@ -55,6 +56,9 @@ export default function SpectatorStreaming() {
             }
           }
         }
+        if (data.type === "gameUpdate" && Array.isArray(data.players)) {
+          setPlayerStats(data.players);
+        }
       } catch (err) {
         console.error("❌ Failed to parse WebSocket message:", err);
       }
@@ -83,6 +87,7 @@ export default function SpectatorStreaming() {
 
   const currentUsername = usernames[currentIndex];
   const currentFrame = frameMap.get(currentUsername);
+  const currentStats = playerStats.find((p) => p.username === currentUsername);
 
   return (
     <div
@@ -118,6 +123,21 @@ export default function SpectatorStreaming() {
             borderRadius: "12px",
           }}
         />
+      )}
+      {currentStats && (
+        <div
+          style={{ marginTop: "20px", fontSize: "18px", textAlign: "center" }}
+        >
+          <p>
+            <strong>Hits Given:</strong> {currentStats.hitsGiven}
+          </p>
+          <p>
+            <strong>Hits Taken:</strong> {currentStats.hitsTaken}
+          </p>
+          <p>
+            <strong>Points:</strong> {currentStats.points}
+          </p>
+        </div>
       )}
 
       {usernames.length > 1 && (
