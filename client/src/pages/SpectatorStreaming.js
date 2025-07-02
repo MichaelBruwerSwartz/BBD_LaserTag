@@ -22,17 +22,19 @@ export default function SpectatorStreaming() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      console.log("THIS IS THE DATA BEING RECEIVED" + data);
-      console.log("THIS IS THE DATA BEING RECEIVED" + data.frames);
-      console.log(
-        "THIS IS THE DATA BEING RECEIVED within frames" +
-          data.frames.username +
-          " " +
-          data.frames.frame
-      );
+      console.log("Received data:", data);
+      console.log("Frames array:", data.frames);
+
+      if (Array.isArray(data.frames)) {
+        data.frames.forEach((frameObj, index) => {
+          console.log(
+            `Frame ${index}: username = ${frameObj.username}, frame = [truncated]`
+          );
+        });
+      }
 
       if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
-        setFrames(data.frames); // replaces the whole frame list each time
+        setFrames(data.frames); // update the full frame list
       }
     };
 
