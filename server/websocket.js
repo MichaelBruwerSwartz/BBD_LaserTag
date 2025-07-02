@@ -33,7 +33,7 @@ function getPlayerList(session) {
             color,
             hitsGiven,
             hitsTaken,
-            points
+            points: Math.floor(Math.random() * 100)
         };
     })
 }

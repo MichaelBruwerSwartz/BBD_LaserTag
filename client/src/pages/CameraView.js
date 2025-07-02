@@ -436,22 +436,6 @@ export default function CameraView() {
     return () => clearInterval(intervalId);
   }, [username]);
 
-  // Poll leaderboard every 2 seconds
-  useEffect(() => {
-    let intervalId;
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      intervalId = setInterval(() => {
-        socketRef.current.send(
-          JSON.stringify({
-            type: "requestLeaderboard",
-          })
-        );
-      }, 2000); // 2-second interval
-    }
-
-    return () => clearInterval(intervalId);
-  }, []);
-
   return (
     <div
       style={{
@@ -638,14 +622,14 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            top: "5%",
+            top: "2%",
             left: "5%",
             backgroundColor: "rgba(0,0,0,0.7)",
             padding: "10px",
             borderRadius: "8px",
             maxHeight: "50vh",
             overflowY: "auto",
-            width: "200px",
+            width: "100px",
             color: "white",
             fontSize: "14px",
             zIndex: 5,
