@@ -32,7 +32,7 @@ export default function CameraView() {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const sortedPlayers = [...leaderboardData].sort(
     (a, b) => b.points - a.points
-  );
+  ).slice(0, 3);
 
   // WebSocket ref
   const socketRef = useRef(null);
@@ -642,7 +642,7 @@ export default function CameraView() {
             <div
               key={username}
               style={{
-                backgroundColor: i === 0 ? "gold" : i === 1 ? "silver" : "",
+                backgroundColor: i === 0 ? "gold" : i === 1 ? "silver" : "#cd7f32",
                 fontWeight: i === 0 ? "bold" : "normal",
                 marginBottom: "6px",
                 padding: "4px",
