@@ -90,38 +90,36 @@ export default function SpectatorStreaming() {
         />
       )}
 
-      {usernames.length === 1 && (
-        <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
-          <button
-            onClick={goToPrev}
-            style={{
-              fontSize: "24px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#1f2937",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            GO TO PREVIOUS PLAYER
-          </button>
-          <button
-            onClick={goToNext}
-            style={{
-              fontSize: "24px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#1f2937",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            GO TO NEXT PLAYER
-          </button>
-        </div>
-      )}
+      <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
+        <button
+          onClick={goToPrev}
+          style={{
+            fontSize: "24px",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: "#1f2937",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          GO TO PREVIOUS PLAYER
+        </button>
+        <button
+          onClick={goToNext}
+          style={{
+            fontSize: "24px",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: "#1f2937",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          GO TO NEXT PLAYER
+        </button>
+      </div>
     </div>
   );
 }

@@ -28,7 +28,7 @@ export default function CameraView() {
   const [isReloading, setIsReloading] = useState(false);
 
   const location = useLocation();
-  const { username, gameCode, color } = location.state || {};
+  const { username, gameCode, codeId } = location.state || {};
 
   // leaderboard logic
   const [leaderboardData, setLeaderboardData] = useState({});
@@ -38,13 +38,13 @@ export default function CameraView() {
 
   const socketRef = useRef(null);
   useEffect(() => {
-    if (!username || !gameCode || !color) {
+    if (!username || !gameCode || !codeId) {
       console.warn("Missing required values to connect WebSocket.");
       return;
     }
 
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&codeId=${codeId}`
     );
 
     socketRef.current = socket;
@@ -74,7 +74,7 @@ export default function CameraView() {
     return () => {
       socket.close();
     };
-  }, [username, gameCode, color]);
+  }, [username, gameCode, codeId]);
 
   // Helper function to get color name from RGB values
   function getColorName(r, g, b) {

@@ -2,14 +2,14 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const colorMap = {
-  "red": "red",
-  'orange': "orange",
-  "yellow": "yellow",
-  "green": "green",
-  "blue": "blue",
-  "pink": "pink",
-  "purple": "purple"
-}
+  red: "red",
+  orange: "orange",
+  yellow: "yellow",
+  green: "green",
+  blue: "blue",
+  pink: "pink",
+  purple: "purple",
+};
 
 export default function PlayerLobby() {
   const [players, setPlayers] = useState([]);
@@ -47,13 +47,12 @@ export default function PlayerLobby() {
         const currentPlayer = data.playerList.find(
           (p) => p.username === username
         );
-        console.log("Navigating with player color", currentPlayer?.color);
 
         navigate("/camera_view", {
           state: {
             username,
             gameCode,
-            color: currentPlayer?.color,
+            color: currentPlayer?.codeId,
           },
         });
       } else if (data.type === "gameUpdate") {
