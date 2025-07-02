@@ -24,7 +24,7 @@ export default function Calibration() {
       await tf.ready();
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
+        video: { facingMode: { ideal: "user" } },
         audio: false,
       });
 
