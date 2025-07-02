@@ -147,7 +147,6 @@ export default function CameraView() {
       console.warn("WebSocket not open; hit not sent");
       return;
     }
-    window.alert(`Hit the ${targetColor} ${msg}`);
     const hitPayload = {
       type: "hit",
       weapon: gunType,
@@ -376,7 +375,7 @@ export default function CameraView() {
         alert(`Camera access denied. Please allow permissions.\n\nError: ${err.message}`);
       }
     }
-    startCamera();
+    setTimeout(startCamera, 5000) // delay to prevent error of not starting and make it work more consistently
   }, []);
 
   // Send camera frames periodically to server via WebSocket
