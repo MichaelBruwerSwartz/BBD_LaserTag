@@ -18,6 +18,15 @@ export default function CameraView() {
   */
   const [gameTimeString, setGameTimeString] = useState("00:00");
 
+  const gunConfig = {
+    pistol: { ammo: 5, reloadTime: 1000 },
+    shotgun: { ammo: 2, reloadTime: 2000 },
+    sniper: { ammo: 1, reloadTime: 3000 },
+  };
+
+  const [ammo, setAmmo] = useState(gunConfig["pistol"].ammo);
+  const [isReloading, setIsReloading] = useState(false);
+
   const location = useLocation();
   const { username, gameCode, color } = location.state || {};
 
@@ -214,7 +223,7 @@ export default function CameraView() {
           Math.max(triRect.width, triRect.height) /
           Math.min(triRect.width, triRect.height);
         if (solidity > 0.85 && triangleAspectRatio < 2.5) {
-          shape = "Triangle";
+          shape = "triangle";
         }
       } else if (vertices === 4) {
         const rect = cv.minAreaRect(cnt);
@@ -254,12 +263,12 @@ export default function CameraView() {
         const colorName = getColorName(r, g, b);
 
         if (
-          (shape === "Triangle" ||
-            shape === "Rectangle" ||
-            shape === "Sqaure") &&
+          (shape === "triangle" ||
+            shape === "rectangle" ||
+            shape === "sqaure") &&
           dist >= 0
         ) {
-          hitDetected(colorName, "Triangle");
+          hitDetected(colorName, "triangle");
         }
 
         // Draw contour
@@ -303,24 +312,48 @@ export default function CameraView() {
   }
 
   const handleShoot = () => {
+    if (isReloading) return; // disable shooting while reloading
+
+    if (ammo <= 0) {
+      reload(); // trigger automatic reload
+      return;
+    }
+
     console.log(`Shoot button clicked with ${gunType}!`);
+    setAmmo(ammo - 1);
+
     if (navigator.vibrate) {
       navigator.vibrate([75, 25, 75]);
     }
 
-    if (window.cv && videoRef.current && canvasRef.current) {
-      processVideoOnce(videoRef.current, canvasRef.current);
-    }
+    // if (window.cv && videoRef.current && canvasRef.current) {
+    //   processVideoOnce(videoRef.current, canvasRef.current);
+    // }
   };
 
   const selectGun = (type) => {
     setGunType(type);
+    setAmmo(gunConfig[type].ammo);
+    setIsReloading(false); // cancel reload when switching guns
+
     setZoomEnabled(false);
     if (videoRef.current) {
       videoRef.current.style.transform =
         type === "sniper" ? "scale(3)" : "scale(1)";
       videoRef.current.style.transformOrigin = "center center";
     }
+  };
+
+  const reload = () => {
+    if (isReloading) return;
+    setIsReloading(true);
+
+    const reloadTime = gunConfig[gunType].reloadTime;
+
+    setTimeout(() => {
+      setAmmo(gunConfig[gunType].ammo);
+      setIsReloading(false);
+    }, reloadTime);
   };
 
   useEffect(() => {
@@ -465,34 +498,80 @@ export default function CameraView() {
           }}
         />
 
-        <img
-          key={gunType}
-          src={
-            gunType === "shotgun"
-              ? "/shotgun.png"
-              : gunType === "sniper"
-              ? "/sniper.png"
-              : "/pistol.png"
-          }
-          alt="Shoot"
-          onClick={handleShoot}
+        <div
           style={{
             position: "absolute",
             bottom: "10%",
             left: "50%",
-            width: "150px",
-            height: "150px",
             transform: "translateX(-50%)",
-            cursor: "pointer",
-            transition: "transform 0.1s ease-in-out",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "20px",
           }}
-          onTouchStart={(e) => {
-            e.currentTarget.style.transform = "translateX(-50%) scale(0.95)";
-          }}
-          onTouchEnd={(e) => {
-            e.currentTarget.style.transform = "translateX(-50%) scale(1)";
-          }}
-        />
+        >
+          {/* Gun & Bullets (vertically aligned) */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <img
+              key={gunType}
+              src={
+                gunType === "shotgun"
+                  ? "/shotgun.png"
+                  : gunType === "sniper"
+                  ? "/sniper.png"
+                  : "/pistol.png"
+              }
+              alt="Shoot"
+              onClick={handleShoot}
+              style={{
+                width: "150px",
+                height: "150px",
+                cursor: "pointer",
+                transition: "transform 0.1s ease-in-out",
+              }}
+              onTouchStart={(e) => {
+                e.currentTarget.style.transform = "scale(0.95)";
+              }}
+              onTouchEnd={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            />
+
+            {/* Bullet icons */}
+            <div style={{ display: "flex", gap: "4px", marginTop: "10px" }}>
+              {Array.from({ length: ammo }).map((_, i) => (
+                <img
+                  key={i}
+                  src="/bullet.png"
+                  alt="Bullet"
+                  style={{ width: "40px", height: "40px" }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {isReloading && (
+            <div
+              style={{
+                color: "#ff4444",
+                backgroundColor: "rgba(0,0,0,0.6)",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
+              Reloading...
+            </div>
+          )}
+        </div>
 
         <div
           style={{
@@ -574,7 +653,7 @@ export default function CameraView() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {sortedPlayers.length > 0 ? (
-              sortedPlayers.map((player, index) => (
+              sortedPlayers.slice(0, 3).map((player, index) => (
                 <div
                   key={player.username}
                   style={{
