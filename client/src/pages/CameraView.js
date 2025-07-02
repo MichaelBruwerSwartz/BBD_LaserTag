@@ -45,6 +45,7 @@ export default function CameraView() {
     shotgun: new Audio("/shotgun.mp3"),
     sniper: new Audio("/sniper.mp3"),
     ouch: new Audio("/ouch.mp3"),
+    powerup: new Audio("/powerup.mp3"),
   });
 
   // Connect to WebSocket & listen for game updates
@@ -91,6 +92,14 @@ export default function CameraView() {
         const { powerup, duration } = data;
         console.log(`⚡ Powerup received: ${powerup} for ${duration}s`);
         setActivePowerup(powerup);
+
+        const powerupSound = audioRef.current.powerup;
+        if (powerupSound) {
+          powerupSound.currentTime = 0;
+          powerupSound
+            .play()
+            .catch((e) => console.warn("Powerup sound failed:", e));
+        }
 
         // Clear after duration
         setTimeout(() => {
@@ -159,10 +168,7 @@ export default function CameraView() {
       blue: [0, 128, 255],
       purple: [128, 0, 255],
       pink: [255, 0, 255],
-<<<<<<< HEAD
-=======
-      aqua: [0, 255, 255]
->>>>>>> f33f3e154b862d4e69850e7b26ecfdd1e7f7b0bc
+      aqua: [0, 255, 255],
     };
     const [r, g, b] = rgbString.match(/\d+/g).map(Number);
     let closestName = "";
@@ -174,7 +180,9 @@ export default function CameraView() {
         closestName = name;
       }
     }
-    console.log(`camv RGB string: ${rgbString} | closest color: ${closestName}`)
+    console.log(
+      `camv RGB string: ${rgbString} | closest color: ${closestName}`
+    );
     return closestName;
   }
 
