@@ -66,7 +66,7 @@ export default function Calibration() {
         if (data.available) {
           navigate("/player_lobby", {
             state: {
-              color: lastSentColorRef.current ?? "unknown",
+              color: getClosestColorName(lastSentColorRef.current) ?? "unknown",
               username,
               gameCode,
             },
@@ -129,6 +129,32 @@ export default function Calibration() {
     return modeColor;
   }
 
+    // Map RGB to closest CSS color name (used for hit color detection)
+    function getClosestColorName(rgbString) {
+        const cssColors = {
+          red: [255, 0, 0],
+          green: [0, 128, 0],
+          blue: [0, 0, 255],
+          yellow: [255, 255, 0],
+          purple: [128, 0, 128],
+          cyan: [0, 255, 255],
+          orange: [255, 165, 0],
+          pink: [255, 192, 203],
+          lime: [0, 255, 0],
+          navy: [0, 0, 128],
+        };
+        const [r, g, b] = rgbString.match(/\d+/g).map(Number);
+        let closestName = "";
+        let minDist = Infinity;
+        for (const [name, [cr, cg, cb]] of Object.entries(cssColors)) {
+          const dist = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
+          if (dist < minDist) {
+            minDist = dist;
+            closestName = name;
+          }
+        }
+        return closestName;
+      }
   async function renderLoop(detector) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
