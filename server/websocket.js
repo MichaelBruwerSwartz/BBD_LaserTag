@@ -125,7 +125,7 @@ wss.on("connection", (ws, req) => {
 
     // create a new session if it doesn't exist
     if (session == null) {
-        session = appData.createSession(sessionId, username);
+        session = appData.createSession(sessionId);
         console.info(`Session ${sessionId} created`);
     }
     if (isSpectator) {
