@@ -42,7 +42,7 @@ function getPlayerList(session) {
 setInterval(() => {
     for (let session of Object.values(appData.sessions)) {
         // check if should close session
-        if (Object.keys(session.players).length === 0) {
+        if (Object.keys(session.players).length === 0 && Object.keys(session.spectators).length) {
             session.persistTime -= 1;
 
             if (session.persistTime <= 0) {
@@ -93,29 +93,52 @@ wss.on("connection", (ws, req) => {
         return;
     }
 
-    const isSpectator =
-        pathnameParts.length === 4 && pathnameParts[3] === "spectator";
     const sessionId = pathnameParts[2];
     let session = appData.sessions[sessionId];
 
+    // color checking
+    if (pathnameParts.length === 4 && pathnameParts[3] === "check_color") {
+        ws.on("message", (message) => {
+            const { color } = query;
+            let colorAvailable = true
+
+            if (session != null) {
+                // check if color is used
+                for (let player of Object.values(session.players)) {
+                    if (player.color === color) {
+                        colorAvailable = false;
+                        break;
+                    }
+                }
+            }
+
+            ws.send({
+                type: 'colorResult',
+                available: colorAvailable
+            });
+        });
+
+        return
+    }
+
+    const isSpectator = pathnameParts.length === 4 && pathnameParts[3] === "spectator";
+
+    // create a new session if it doesn't exist
+    if (session == null) {
+        session = appData.createSession(sessionId, username);
+        console.info(`Session ${sessionId} created`);
+    }
     if (isSpectator) {
-        // spectators do not have usernames
-        const id = randomUUID();
-
-        if (session == null) {
-            ws.close(1000, "Session does not exist"); // cannot create session as spectator
-            return;
-        }
-
         console.info(`Spectator connected to session ${sessionId}`);
 
         // add spectator to session
-        session.spectators[id] = ws;
+        const spectatorId = randomUUID();
+        session.spectators[spectatorId] = ws;
 
         ws.on("close", () => {
             // remove spectator from session
             console.info(`Spectator disconnected from session ${sessionId}`);
-            delete session.spectators[id];
+            delete session.spectators[spectatorId];
         });
     } else {
         let { color, username } = query;
@@ -125,24 +148,19 @@ wss.on("connection", (ws, req) => {
             return;
         }
 
-        if (session == null) {
-            // create a new session if it doesn't exist
-            session = appData.createSession(sessionId, username);
-            console.info(`Session ${sessionId} created for admin user ${username}`);
-        } else {
-            // generate a new username if it already exists in the session
-            while (Object.keys(session.players).includes(username)) {
-                const randomSuffix = Math.floor(Math.random() * 10);
-                username += randomSuffix;
-            }
-
-            // set admin if no admin exists
-            if (session.admin == null) {
-                session.admin = username;
-            }
+        // generate a new username if it already exists in the session
+        while (Object.keys(session.players).includes(username)) {
+            const randomSuffix = Math.floor(Math.random() * 10);
+            username += randomSuffix;
         }
 
         console.info(`Player ${username} connected to session ${sessionId}`);
+
+        // set admin if no admin exists
+        if (session.admin == null) {
+            console.info(`Player ${username} was made admin for session ${sessionId}`);
+            session.admin = username;
+        }
 
         // add player to session
         session.players[username] = {
