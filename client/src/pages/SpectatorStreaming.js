@@ -152,8 +152,6 @@ export default function SpectatorStreaming() {
               position: "absolute",
               top: "50%",
               left: "50%",
-              width: "80px",
-              height: "80px",
               transform: "translate(-50%, -50%)",
               pointerEvents: "none",
               opacity: 0.8,
