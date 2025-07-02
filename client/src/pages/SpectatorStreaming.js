@@ -132,18 +132,34 @@ export default function SpectatorStreaming() {
       </h2>
 
       {currentFrame && (
-        <img
-          src={currentFrame}
-          alt={`Live stream from ${currentUsername}`}
-          style={{
-            width: "90%",
-            maxWidth: "800px",
-            maxHeight: "30vh",
-            objectFit: "contain",
-            border: "3px solid #fff",
-            borderRadius: "12px",
-          }}
-        />
+        <div style={{ position: "relative", width: "90%", maxWidth: "800px" }}>
+          <img
+            src={currentFrame}
+            alt={`Live stream from ${currentUsername}`}
+            style={{
+              width: "100%",
+              maxHeight: "30vh",
+              objectFit: "contain",
+              border: "3px solid #fff",
+              borderRadius: "12px",
+              display: "block",
+            }}
+          />
+          <img
+            src="/scope.png"
+            alt="Scope Reticle"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "80px",
+              height: "80px",
+              transform: "translate(-50%, -50%)",
+              pointerEvents: "none",
+              opacity: 0.8,
+            }}
+          />
+        </div>
       )}
 
       {currentStats && (
