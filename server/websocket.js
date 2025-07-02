@@ -113,10 +113,10 @@ wss.on("connection", (ws, req) => {
             }
 
             console.info(`Checking color availability for ${color}: ${colorAvailable ? 'available' : 'unavailable'}`)
-            ws.send({
+            ws.send(JSON.stringify({
                 type: 'colorResult',
                 available: colorAvailable
-            });
+            }));
         });
 
         return
