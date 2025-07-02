@@ -1,6 +1,16 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+const dataExample = [ // columns: position, name, points, hitsGiven, hitsTaken
+  {
+    username: 'player1',
+    color: 'red',
+    points: 50,
+    hitsGiven: 1,
+    hitsTaken: 1,
+  }
+]
+
 const PlayerLeaderboard = () => {
   const [players, setPlayers] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -11,29 +21,21 @@ const PlayerLeaderboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Initialize players from state if available, otherwise use dummy data
+    if (state?.players) {
+      setPlayers(state.players);
+    } else {
+      const dummyPlayers = [
+        { username: 'player1', color: 'red', points: 50, hitsGiven: 5, hitsTaken: 2 },
+        { username: 'player2', color: 'blue', points: 75, hitsGiven: 8, hitsTaken: 3 },
+        { username: 'player3', color: 'green', points: 30, hitsGiven: 3, hitsTaken: 5 },
+      ];
+      setPlayers(dummyPlayers);
+    }
+
     // Use the correct WebSocket URL for post-game data (optional, for future backend integration)
     const socket = new WebSocket(`ws://localhost:4000/session/${gameCode}/postgame`);
     socketRef.current = socket;
-
-    // Static dummy data for post-game leaderboard
-    const dummyPlayerList = [
-      { name: "Player1" },
-      { name: "Player2" },
-      { name: "Player3" },
-    ];
-    setPlayers(dummyPlayerList);
-
-    // Set initial post-game stats
-    setTimeout(() => {
-      setPlayers((prevPlayers) =>
-        prevPlayers.map((player) => ({
-          ...player,
-          hitsToOthers: Math.floor(Math.random() * 20),
-          timesHit: Math.floor(Math.random() * 15),
-          overallPoints: Math.floor(Math.random() * 100),
-        }))
-      );
-    }, 1000);
 
     socket.onmessage = (event) => {
       console.log("Message received:", event.data);
@@ -41,12 +43,12 @@ const PlayerLeaderboard = () => {
       if (data.type === "postGameStatsUpdate") {
         setPlayers((prevPlayers) =>
           prevPlayers.map((player) => {
-            const stats = data.stats[player.name] || {};
+            const stats = data.stats[player.username] || {};
             return {
               ...player,
-              hitsToOthers: stats.hitsToOthers || 0,
-              timesHit: stats.timesHit || 0,
-              overallPoints: stats.overallPoints || 0,
+              points: stats.points || player.points || 0,
+              hitsGiven: stats.hitsGiven || player.hitsGiven || 0,
+              hitsTaken: stats.hitsTaken || player.hitsTaken || 0,
             };
           })
         );
@@ -72,7 +74,7 @@ const PlayerLeaderboard = () => {
       socket.close();
       clearInterval(timeInterval);
     };
-  }, [gameCode]);
+  }, [gameCode, state]);
 
   const goBackToLanding = () => {
     navigate("/");
@@ -82,12 +84,19 @@ const PlayerLeaderboard = () => {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#1a1a1a",
+        height: "100vh",
+        backgroundImage: "url('/images/Laser-Tag-Lobby.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
         color: "#fff",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         fontFamily: "Arial, sans-serif",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <div
@@ -96,8 +105,22 @@ const PlayerLeaderboard = () => {
           padding: "0.5rem",
           backgroundColor: "#4b0082",
           textAlign: "center",
+          position: "relative",
+          zIndex: 5,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
+        <img
+          src="/images/Laser-Tag.png"
+          alt="Logo"
+          style={{
+            width: "100px",
+            height: "auto",
+            marginRight: "1rem",
+          }}
+        />
         <p>Time: {currentTime.toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg" })}</p>
       </div>
       <div
@@ -105,6 +128,8 @@ const PlayerLeaderboard = () => {
           padding: "1rem",
           width: "100%",
           maxWidth: "64rem",
+          position: "relative",
+          zIndex: "5",
         }}
       >
         {players.length > 0 ? (
@@ -124,20 +149,20 @@ const PlayerLeaderboard = () => {
             >
               <span>Ranking</span>
               <span>Player Name</span>
-              <span>Hits to Others</span>
-              <span>Times Hit</span>
-              <span>Overall Points</span>
+              <span>Hits Given</span>
+              <span>Hits Taken</span>
+              <span>Points</span>
             </div>
             {/* Data Rows */}
             {players
               .map((player) => ({
                 ...player,
-                overallPoints: player.overallPoints || 0,
+                points: player.points || 0,
               }))
-              .sort((a, b) => b.overallPoints - a.overallPoints)
+              .sort((a, b) => b.points - a.points)
               .map((player, index) => (
                 <div
-                  key={index}
+                  key={player.username}
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
@@ -149,10 +174,10 @@ const PlayerLeaderboard = () => {
                   }}
                 >
                   <span>{index + 1}</span>
-                  <span style={{ fontWeight: "bold" }}>{player.name}</span>
-                  <span>{player.hitsToOthers}</span>
-                  <span>{player.timesHit}</span>
-                  <span>{player.overallPoints}</span>
+                  <span style={{ fontWeight: "bold" }}>{player.username}</span>
+                  <span>{player.hitsGiven}</span>
+                  <span>{player.hitsTaken}</span>
+                  <span>{player.points}</span>
                 </div>
               ))}
           </div>
@@ -160,7 +185,7 @@ const PlayerLeaderboard = () => {
           <p style={{ textAlign: "center" }}>No leaderboard data yet...</p>
         )}
       </div>
-      <div style={{ marginTop: "1rem" }}>
+      <div style={{ marginTop: "1rem", position: "relative", zIndex: 5 }}>
         <button
           onClick={goBackToLanding}
           style={{
