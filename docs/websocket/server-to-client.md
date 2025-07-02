@@ -56,7 +56,7 @@ Sent to **players and spectators** when the player list changes.
   - codeId
   - color
   - hitsGiven
-  - hitsReceived
+  - hitsTaken
   - points
 
 ### `playerQuit`
@@ -78,5 +78,5 @@ Sent to **players and spectators** (including the session admin) after an admin 
   - codeId
   - color
   - hitsGiven
-  - hitsReceived
+  - hitsTaken
   - points
