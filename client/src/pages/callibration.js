@@ -195,7 +195,7 @@ export default function Calibration() {
     }
 
     const modeColor = getModeColorFromPoints(ctx, ls, rs);
-    
+
     if (!modeColor || modeColor === "aqua") {
       alert("Color could not be captured. Try again.");
       return;
@@ -252,15 +252,17 @@ export default function Calibration() {
 
         <button
           onClick={capturePose}
+          disabled={!username.trim()}
           style={{
             padding: "0.75rem 2rem",
             fontSize: "1.1rem",
-            backgroundColor: "#0ea5e9",
+            backgroundColor: !username.trim() ? "#555" : "#0ea5e9",
             color: "#fff",
             border: "none",
             borderRadius: "10px",
-            cursor: "pointer",
+            cursor: !username.trim() ? "not-allowed" : "pointer",
             transition: "background 0.3s",
+            opacity: !username.trim() ? 0.6 : 1,
           }}
         >
           📸 Capture Pose
