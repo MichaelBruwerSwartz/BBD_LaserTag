@@ -425,28 +425,44 @@ export default function CameraView() {
   // This sends the streaming frame
   useEffect(() => {
     let intervalId;
-    if (videoRef.current && socketRef.current) {
-      const sendFrame = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const video = videoRef.current;
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
+    const checkAndStartStreaming = () => {
+      const video = videoRef.current;
+      const socket = socketRef.current;
 
-        const frame = canvas.toDataURL("image/jpeg", 0.5); // compress for network
-        socketRef.current.send(
-          JSON.stringify({
-            type: "cameraFrame",
-            username,
-            frame,
-          })
-        );
-      };
+      if (!video || !socket) return;
 
-      intervalId = setInterval(sendFrame, 500); // send every 500ms
-    }
+      if (socket.readyState === WebSocket.OPEN) {
+        intervalId = setInterval(() => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+
+          const frame = canvas.toDataURL("image/jpeg", 0.5);
+
+          socket.send(
+            JSON.stringify({
+              type: "cameraFrame",
+              username,
+              frame,
+            })
+          );
+        }, 500);
+      } else {
+        // Wait and retry until socket is open
+        const waitForSocket = setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            clearInterval(waitForSocket);
+            checkAndStartStreaming(); // try again
+          }
+        }, 100);
+      }
+    };
+
+    checkAndStartStreaming();
 
     return () => clearInterval(intervalId);
   }, []);
