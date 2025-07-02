@@ -466,7 +466,7 @@ export default function CameraView() {
               frame,
             })
           );
-        }, 200);
+        }, 100);
       } else {
         // Wait and retry until socket is open
         const waitForSocket = setInterval(() => {
