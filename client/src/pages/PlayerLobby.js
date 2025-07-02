@@ -2,13 +2,16 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const colorMap = {
-  red: "#FF8A9A", // Lighter Laser Cherry
-  orange: "#FFB74D", // Softer Amber Neon
-  yellow: "#FFE082", // Muted Amber Spark
-  green: "#C5E1A5", // Softer Acid Green
-  blue: "#90CAF9", // Lighter Laser Azure
-  pink: "#F8BBD0", // Softer Bubblegum Light
-  purple: "#CE93D8", // Muted Plasma Purple
+  red: [255, 138, 154], // Soft Rose Red
+  green: [197, 225, 165], // Pastel Mint Green
+  blue: [144, 202, 249], // Baby Blue
+  yellow: [255, 224, 130], // Light Buttercup
+  purple: [206, 147, 216], // Lavender Mist
+  cyan: [178, 235, 242], // Soft Ice Blue
+  orange: [255, 183, 77], // Creamsicle Orange
+  pink: [248, 187, 208], // Bubblegum Light
+  lime: [220, 255, 150], // Spring Lime
+  navy: [128, 179, 255], // Soft Sky Navy
 };
 
 export default function PlayerLobby() {
