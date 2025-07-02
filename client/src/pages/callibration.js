@@ -97,7 +97,7 @@ export default function Calibration() {
       blue: [0, 128, 255],
       purple: [128, 0, 255],
       pink: [255, 0, 255],
-      aqua: [0, 255, 255]
+      aqua: [0, 255, 255],
     };
     const [r, g, b] = rgbString.match(/\d+/g).map(Number);
     let closestName = "";
@@ -109,7 +109,7 @@ export default function Calibration() {
         closestName = name;
       }
     }
-    console.log(`cal RGB string: ${rgbString} | closest color: ${closestName}`)
+    console.log(`cal RGB string: ${rgbString} | closest color: ${closestName}`);
     return closestName;
   }
 
@@ -236,7 +236,7 @@ export default function Calibration() {
         <input
           type="text"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => setUsername(e.target.value.slice(0, 6))}
           placeholder="Enter your username"
           style={{
             padding: "0.75rem 1.25rem",
