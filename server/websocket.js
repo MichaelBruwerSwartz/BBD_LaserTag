@@ -99,7 +99,7 @@ wss.on("connection", (ws, req) => {
     // color checking
     if (pathnameParts.length === 4 && pathnameParts[3] === "check_color") {
         ws.on("message", (message) => {
-            const { color } = query;
+            const { color } = JSON.parse(message);
             let colorAvailable = true
 
             if (session != null) {
