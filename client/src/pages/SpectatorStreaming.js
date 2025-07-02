@@ -102,7 +102,7 @@ export default function SpectatorStreaming() {
               cursor: "pointer",
             }}
           >
-            ⬅
+            GO TO PREVIOUS PLAYER
           </button>
           <button
             onClick={goToNext}
@@ -116,7 +116,7 @@ export default function SpectatorStreaming() {
               cursor: "pointer",
             }}
           >
-            ➡
+            GO TO NEXT PLAYER
           </button>
         </div>
       )}
