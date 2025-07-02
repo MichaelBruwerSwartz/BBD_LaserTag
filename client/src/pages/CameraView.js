@@ -30,9 +30,12 @@ export default function CameraView() {
 
   // Leaderboard state
   const [leaderboardData, setLeaderboardData] = useState([]);
-  const sortedPlayers = [...leaderboardData].sort(
-    (a, b) => b.points - a.points
-  ).slice(0, 3);
+  const sortedPlayers = [...leaderboardData]
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 3);
+
+  const currentPlayer = leaderboardData.find((p) => p.username === username);
+  const isDead = currentPlayer?.points === 0;
 
   // WebSocket ref
   const socketRef = useRef(null);
@@ -317,13 +320,12 @@ export default function CameraView() {
   }
 
   const handleShoot = () => {
-    if (isReloading) return;
+    if (isReloading || isDead) return; // 🔒 Don't shoot if dead or reloading
     if (ammo <= 0) {
       console.log("🔫 No ammo left — can't shoot");
       return;
     }
 
-    // 🔊 Play shooting sound based on gun type
     const shootSound = audioRef.current[gunType];
     if (shootSound) {
       shootSound.currentTime = 0;
@@ -524,6 +526,25 @@ export default function CameraView() {
             opacity: 0.8,
           }}
         />
+        {isDead && (
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(50% + 60px)",
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "red",
+              fontSize: "32px",
+              fontWeight: "bold",
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              padding: "10px 20px",
+              borderRadius: "12px",
+              zIndex: 10,
+            }}
+          >
+            You Died
+          </div>
+        )}
 
         <div
           style={{
@@ -607,9 +628,50 @@ export default function CameraView() {
             zIndex: 3,
           }}
         >
-          <button onClick={() => selectGun("pistol")}> Pistol</button>
-          <button onClick={() => selectGun("shotgun")}> Shotgun</button>
-          <button onClick={() => selectGun("sniper")}> Sniper</button>
+          <button
+            onClick={() => selectGun("pistol")}
+            style={{
+              padding: "10px 20px",
+              fontSize: "16px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              backgroundColor: "#333",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Pistol
+          </button>
+
+          <button
+            onClick={() => selectGun("shotgun")}
+            style={{
+              padding: "10px 20px",
+              fontSize: "16px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              backgroundColor: "#333",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Shotgun
+          </button>
+
+          <button
+            onClick={() => selectGun("sniper")}
+            style={{
+              padding: "10px 20px",
+              fontSize: "16px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              backgroundColor: "#333",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Sniper
+          </button>
         </div>
 
         <div
@@ -654,7 +716,8 @@ export default function CameraView() {
             <div
               key={username}
               style={{
-                backgroundColor: i === 0 ? "gold" : i === 1 ? "silver" : "#cd7f32",
+                backgroundColor:
+                  i === 0 ? "gold" : i === 1 ? "silver" : "#cd7f32",
                 fontWeight: i === 0 ? "bold" : "normal",
                 marginBottom: "6px",
                 padding: "4px",
