@@ -2,16 +2,15 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const colorMap = {
-  red: "#FF8A9A",    // Lighter Laser Cherry
-  orange: "#FFB74D", // Softer Amber Neon
-  yellow: "#FFE082", // Muted Amber Spark
-  green: "#C5E1A5",  // Softer Acid Green
-  blue: "#90CAF9",   // Lighter Laser Azure
-  pink: "#F8BBD0",   // Softer Bubblegum Light
-  purple: "#CE93D8", // Muted Plasma Purple
-  navy: "#8A9ABF",   // Softened Navy
-  lime: "#D4E0A5",   // Softened Lime
-  cyan: "#A3D9E9",   // Softened Cyan
+  white: "#FFFFFF",
+  black: "#323232",       // softened black
+  red: "#FFB3BA",
+  orange: "#FFCC99",
+  yellow: "#FFFFCC",
+  green: "#CCFFCC",
+  blue: "#ADD8E6",
+  purple: "#DABBFF",
+  pink: "#FFC0CB",
 };
 
 export default function PlayerLobby() {
