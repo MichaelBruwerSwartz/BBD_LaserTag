@@ -22,6 +22,7 @@ export default function SpectatorStreaming() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
+      console.log("THIS IS THE DATA BEING RECEIVED" + data);
       if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
         setFrames(data.frames); // replaces the whole frame list each time
       }

@@ -240,6 +240,7 @@ wss.on("connection", (ws, req) => {
           })),
         });
 
+        console.info(spectatorMessage);
         sendToClients(session, spectatorMessage, false, true);
       }
     });
