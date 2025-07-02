@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function SpectatorStreaming() {
   const [frameMap, setFrameMap] = useState(new Map());
+  const [usernames, setUsernames] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const socketRef = useRef(null);
 
   const location = useLocation();
+  const navigate = useNavigate();
   const { gameCode } = location.state || {};
 
   useEffect(() => {
@@ -25,29 +27,33 @@ export default function SpectatorStreaming() {
         console.log("📦 Raw WebSocket message received:", data);
 
         if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
-          setFrameMap((prevMap) => {
-            const newMap = new Map(prevMap);
-            data.frames.forEach(({ username, frame }) => {
-              newMap.set(username, frame);
+          const currentUsername = usernames[currentIndex];
+          const frameForCurrentUser = data.frames.find(
+            (f) => f.username === currentUsername
+          );
+
+          if (frameForCurrentUser) {
+            setFrameMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(
+                frameForCurrentUser.username,
+                frameForCurrentUser.frame
+              );
+              return newMap;
             });
+          }
 
-            // Remove players who are no longer sending frames
-            const activeUsernames = new Set(data.frames.map((f) => f.username));
-            for (let key of newMap.keys()) {
-              if (!activeUsernames.has(key)) {
-                newMap.delete(key);
-              }
-            }
+          const incomingUsernames = data.frames.map((f) => f.username);
+          if (
+            incomingUsernames.length !== usernames.length ||
+            !incomingUsernames.every((name, i) => name === usernames[i])
+          ) {
+            setUsernames(incomingUsernames);
 
-            const usernames = Array.from(newMap.keys());
-            const currentUsername = usernames[currentIndex];
-            if (!activeUsernames.has(currentUsername)) {
-              console.log("⚠️ Current player removed — resetting to index 0");
+            if (!incomingUsernames.includes(currentUsername)) {
               setCurrentIndex(0);
             }
-
-            return newMap;
-          });
+          }
         }
       } catch (err) {
         console.error("❌ Failed to parse WebSocket message:", err);
@@ -65,11 +71,7 @@ export default function SpectatorStreaming() {
     return () => {
       socket.close();
     };
-  }, [gameCode, currentIndex]);
-
-  const usernames = Array.from(frameMap.keys());
-  const currentUsername = usernames[currentIndex];
-  const currentFrame = frameMap.get(currentUsername);
+  }, [gameCode, usernames, currentIndex]);
 
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % usernames.length);
@@ -79,9 +81,8 @@ export default function SpectatorStreaming() {
     setCurrentIndex((prev) => (prev - 1 + usernames.length) % usernames.length);
   };
 
-  console.log("🎯 Current Index:", currentIndex);
-  console.log("🎥 Current Username:", currentUsername);
-  console.log("🖼️ FrameMap:", frameMap);
+  const currentUsername = usernames[currentIndex];
+  const currentFrame = frameMap.get(currentUsername);
 
   return (
     <div
@@ -129,6 +130,22 @@ export default function SpectatorStreaming() {
           </button>
         </div>
       )}
+
+      <button
+        onClick={() => navigate("/")}
+        style={{
+          marginTop: "30px",
+          fontSize: "18px",
+          padding: "10px 20px",
+          borderRadius: "8px",
+          border: "none",
+          backgroundColor: "#ef4444",
+          color: "#fff",
+          cursor: "pointer",
+        }}
+      >
+        Back to Home
+      </button>
     </div>
   );
 }
