@@ -88,7 +88,7 @@ export default function SpectatorStreaming() {
         />
       )}
 
-      {usernames.length > 1 && (
+      {usernames.length === 1 && (
         <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
           <button
             onClick={goToPrev}
