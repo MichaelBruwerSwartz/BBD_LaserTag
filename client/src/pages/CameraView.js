@@ -353,7 +353,7 @@ export default function CameraView() {
     const startCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" } },
+          video: { facingMode: { ideal: "environment" } },
           audio: false,
         });
         videoRef.current.srcObject = stream;
@@ -517,7 +517,7 @@ export default function CameraView() {
               left: "50%",
               transform: "translateX(-50%)",
               color: "white",
-              fontSize: "24px",
+              fontSize: "18px",
               fontWeight: "bold",
               backgroundColor: "rgba(0, 0, 0, 0.6)",
               padding: "6px 12px",
