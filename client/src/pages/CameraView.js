@@ -93,26 +93,30 @@ export default function CameraView() {
     let animationFrameId;
 
     async function detect() {
-      if (
-        videoRef.current &&
-        canvasRef.current &&
-        detectorRef.current
-      ) {
-        await processVideoOnce(
-          videoRef.current,
-          canvasRef.current,
+      try {
+        if (
+          videoRef.current &&
+          canvasRef.current &&
           detectorRef.current
-        );
+        ) {
+          await processVideoOnce(
+            videoRef.current,
+            canvasRef.current,
+            detectorRef.current
+          );
+        }
+      } catch (err) {
+        console.error("Detect loop error:", err);
       }
       animationFrameId = requestAnimationFrame(detect);
     }
+    
 
     detect();
-/*
+
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-*/
   }, []);
 
   // Map RGB to closest CSS color name (used for hit color detection)
