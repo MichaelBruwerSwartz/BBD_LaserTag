@@ -64,6 +64,10 @@ export default function Calibration() {
         console.log("📨 Calibration socket received:", data);
 
         if (data.available) {
+          console.log(
+            "THIS IS WHAT THAT WEIRD FUNCTION YIELDS" +
+              getClosestColorName(lastSentColorRef.current)
+          );
           navigate("/player_lobby", {
             state: {
               color: getClosestColorName(lastSentColorRef.current) ?? "unknown", // ✅ Fix here
