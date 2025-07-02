@@ -5,7 +5,7 @@ export default function SpectatorStreaming() {
   const [frameMap, setFrameMap] = useState(new Map());
   const [usernames, setUsernames] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [playerStats, setPlayerStats] = useState([]); // 👈 NEW
+  const [playerStats, setPlayerStats] = useState([]);
 
   const socketRef = useRef(null);
 
@@ -28,26 +28,20 @@ export default function SpectatorStreaming() {
         const data = JSON.parse(event.data);
         console.log("📦 Raw WebSocket message received:", data);
 
-        // ✅ Handle camera frames
         if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
           const incomingUsernames = data.frames.map((f) => f.username);
           const currentUsername = usernames[currentIndex];
 
           setFrameMap((prev) => {
             const newMap = new Map();
-
-            // Keep only frames for current batch of usernames
             for (const frame of data.frames) {
               newMap.set(frame.username, frame.frame);
             }
-
-            // Log removal of usernames
             for (const key of prev.keys()) {
               if (!incomingUsernames.includes(key)) {
                 console.log(`❌ Removing ${key} from frameMap (user left)`);
               }
             }
-
             return newMap;
           });
 
@@ -57,14 +51,12 @@ export default function SpectatorStreaming() {
           ) {
             console.log("🔄 Updating usernames:", incomingUsernames);
             setUsernames(incomingUsernames);
-
             if (!incomingUsernames.includes(currentUsername)) {
               setCurrentIndex(0);
             }
           }
         }
 
-        // ✅ Handle gameUpdate
         if (data.type === "gameUpdate" && Array.isArray(data.players)) {
           console.log("🧠 Updating player stats:", data.players);
           setPlayerStats(data.players);
@@ -98,9 +90,6 @@ export default function SpectatorStreaming() {
   const currentUsername = usernames[currentIndex];
   const currentFrame = frameMap.get(currentUsername);
   const currentStats = playerStats.find((p) => p.username === currentUsername);
-
-  console.log("👁️ Current username:", currentUsername);
-  console.log("🎯 Current stats:", currentStats);
 
   return (
     <div
@@ -136,6 +125,7 @@ export default function SpectatorStreaming() {
           <img
             src={currentFrame}
             alt={`Live stream from ${currentUsername}`}
+            className="player-stream-img"
             style={{
               width: "100%",
               maxHeight: "30vh",
@@ -224,6 +214,12 @@ export default function SpectatorStreaming() {
           @keyframes dot-appear {
             0%, 100% { opacity: 0; }
             50% { opacity: 1; }
+          }
+
+          @media (min-width: 1024px) {
+            .player-stream-img {
+              max-height: 50vh !important;
+            }
           }
         `}
       </style>
