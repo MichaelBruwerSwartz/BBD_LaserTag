@@ -7,7 +7,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 export default function Calibration() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const socketRef = useRef(null);
   const [detector, setDetector] = useState(null);
   const [capturedPose, setCapturedPose] = useState(null);
   const [username, setUsername] = useState("");
@@ -48,54 +47,7 @@ export default function Calibration() {
     }
 
     init();
-
-    const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}/check_color`
-    );
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      console.log("🔗 WebSocket connected to calibration channel.");
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log("📨 Calibration socket received:", data);
-
-        if (data.available) {
-          console.log(
-            "THIS IS WHAT THAT WEIRD FUNCTION YIELDS" +
-              getClosestColorName(lastSentColorRef.current)
-          );
-          navigate("/player_lobby", {
-            state: {
-              color: getClosestColorName(lastSentColorRef.current) ?? "unknown", // ✅ Fix here
-              username,
-              gameCode,
-            },
-          });
-        } else {
-          alert("Colour already in use");
-        }
-      } catch (e) {
-        console.error("Invalid message from server:", event.data);
-      }
-    };
-
-    socket.onerror = (err) => {
-      console.error("❌ WebSocket error in Calibration:", err);
-    };
-
-    socket.onclose = () => {
-      console.log("🔌 Calibration WebSocket closed.");
-    };
-
-    return () => {
-      socket.close();
-      if (detectorInstance?.dispose) detectorInstance.dispose();
-    };
-  }, [gameCode, navigate, username]);
+  }, []);
 
   function getKeypoint(keypoints, name) {
     return keypoints.find((k) => k.name === name || k.part === name);
@@ -159,6 +111,7 @@ export default function Calibration() {
     }
     return closestName;
   }
+
   async function renderLoop(detector) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -242,21 +195,22 @@ export default function Calibration() {
     }
 
     const modeColor = getModeColorFromPoints(ctx, ls, rs);
+    
+    if (!modeColor || modeColor === "aqua") {
+      alert("Color could not be captured. Try again.");
+      return;
+    }
+
     lastSentColorRef.current = modeColor; // ✅ save color in ref
 
-    const message = {
-      type: "calibration",
-      username,
-      gameCode,
-      color: modeColor,
-    };
-
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(message));
-      console.log("📤 Sent calibration data to server:", message);
-    } else {
-      alert("WebSocket is not connected.");
-    }
+    // Navigate to player lobby after successful color capture
+    navigate("/player_lobby", {
+      state: {
+        color: getClosestColorName(lastSentColorRef.current),
+        username,
+        gameCode,
+      },
+    });
   }
 
   return (
