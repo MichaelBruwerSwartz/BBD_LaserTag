@@ -33,7 +33,7 @@ function sendToClients(session, message, sendToPlayers, sendToSpectators) {
 }
 
 function getPlayerList(session) {
-    const a = Object.keys(session.players).map((username) => {
+    return Object.keys(session.players).map((username) => {
         const { codeId, hitsGiven, hitsReceived, points } = session.players[username];
         return {
             username,
@@ -43,9 +43,7 @@ function getPlayerList(session) {
             hitsReceived,
             points
         };
-    });
-    console.log(a)
-    return a
+    })
 }
 
 function getAvailablePlayerCodeId(session) {
