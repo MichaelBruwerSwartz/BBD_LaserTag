@@ -107,16 +107,61 @@ export default function SpectatorStreaming() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         color: "white",
         padding: "20px",
         boxSizing: "border-box",
+        position: "relative",
       }}
     >
+      {/* Background Image */}
+      <img
+        src="/images/laser-tag-landing.gif"
+        alt="Background"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          objectFit: "cover",
+          opacity: 0.3,
+          zIndex: -1,
+        }}
+      />
+
+      {/* Header with Logo */}
+      <div
+        style={{
+          width: "100%",
+          backgroundColor: "#800080",
+          padding: "15px 0",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}
+      >
+        <img
+          src="/images/Laser-Tag-Logo.png"
+          alt="Logo"
+          style={{
+            maxHeight: "80px",
+            maxWidth: "200px",
+            objectFit: "contain",
+          }}
+        />
+      </div>
+
       <h2 style={{ marginBottom: "20px" }}>
         {currentUsername
           ? `Viewing: ${currentUsername}`
-          : "Waiting for player streams..."}
+          : "Waiting for player streams "}
+        {!currentUsername && (
+          <span className="loading-dots">
+            <span>.</span><span>.</span><span>.</span>
+          </span>
+        )}
       </h2>
 
       {currentFrame && (
@@ -169,13 +214,36 @@ export default function SpectatorStreaming() {
           padding: "10px 20px",
           borderRadius: "8px",
           border: "none",
-          backgroundColor: "#ef4444",
+          backgroundColor: "#800080",
           color: "#fff",
           cursor: "pointer",
         }}
       >
         Back to Home
       </button>
+
+      <style>
+        {`
+          .loading-dots {
+            display: inline-block;
+            margin-left: 5px;
+          }
+          .loading-dots span {
+            animation: dot-appear 1.2s infinite ease-in-out;
+            display: inline-block;
+          }
+          .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+          }
+          .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+          }
+          @keyframes dot-appear {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+          }
+        `}
+      </style>
     </div>
   );
 }
