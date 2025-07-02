@@ -53,7 +53,6 @@ Sent to **players and spectators** when the player list changes.
 - `admin` - username of the admin user
 - `playerList` - array of player objects
   - username
-  - codeId
   - color
   - hitsGiven
   - hitsTaken
@@ -75,7 +74,6 @@ Sent to **players and spectators** (including the session admin) after an admin 
 
 - `playerList` - array of player objects
   - username
-  - codeId
   - color
   - hitsGiven
   - hitsTaken

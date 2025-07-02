@@ -7,13 +7,6 @@ const appData = require("./app-data");
 const server = http.createServer();
 const wss = new WebSocket.Server({ server });
 
-const colorMap = {
-    // map of code IDs to colors
-    0: "blue",
-    1: "green",
-    2: "yellow",
-};
-
 /*
     Kill messages e.g. player1 killed player2
     Leaderboard updates
@@ -34,30 +27,15 @@ function sendToClients(session, message, sendToPlayers, sendToSpectators) {
 
 function getPlayerList(session) {
     return Object.keys(session.players).map((username) => {
-        const { codeId, hitsGiven, hitsTaken, points } = session.players[username];
+        const { color, hitsGiven, hitsTaken, points } = session.players[username];
         return {
             username,
-            codeId,
-            color: colorMap[codeId],
+            color,
             hitsGiven,
             hitsTaken,
             points
         };
     })
-}
-
-function getAvailablePlayerCodeId(session) {
-    const usedCodeIds = new Set(
-        Object.values(session.players).map((player) => player.codeId)
-    );
-
-    for (let codeId = 0; codeId <= 9; codeId++) {
-        if (!usedCodeIds.has(codeId)) {
-            return codeId;
-        }
-    }
-
-    return null;
 }
 
 // game timers, information updates, session closing
@@ -140,10 +118,10 @@ wss.on("connection", (ws, req) => {
             delete session.spectators[id];
         });
     } else {
-        let { codeId, username } = query;
+        let { color, username } = query;
 
-        if (!username || username.trim() === "") {
-            ws.close(1000, "Username is required");
+        if (color == null || color.trim() === '' || username == null || username.trim() === "") {
+            ws.close(1000, "Username and color is required");
             return;
         }
 
@@ -170,7 +148,7 @@ wss.on("connection", (ws, req) => {
         session.players[username] = {
             connection: ws,
             username,
-            codeId: codeId ?? getAvailablePlayerCodeId(session) ?? 0,
+            color,
             hitsGiven: 0,
             hitsTaken: 0,
             points: 50,
@@ -213,8 +191,8 @@ wss.on("connection", (ws, req) => {
             const { type } = message;
 
             if (type === "hit") {
-                const { codeId, weapon } = message;
-                handleHit(session, session.players[username], codeId, weapon);
+                const { color, weapon } = message;
+                handleHit(session, session.players[username], color, weapon);
             } else if (type === "startGame") {
                 session.state = "game";
                 session.timeLeft = 60;
@@ -282,58 +260,54 @@ wss.on("connection", (ws, req) => {
     }
 });
 
-function handleHit(session, player, codeId, weapon) {
-    if (codeId >= 0 && codeId <= 9) {
-        // player hit
-        // get target from code ID
-        let target;
-        for (let playerUsername in session.players) {
-            if (session.players[playerUsername].codeId === codeId) {
-                target = session.players[playerUsername];
-                break;
-            }
+function handleHit(session, player, color, weapon) {
+    // get target player from color
+    let target;
+
+    for (let playerUsername in session.players) {
+        if (session.players[playerUsername].color === color) {
+            target = session.players[playerUsername];
+            break;
         }
-        if (!target || target.points <= 0) return;
+    }
 
-        const damages = {
-            pistol: 16,
-            sniper: 32,
-            shotgun: 8,
-        };
-        const pointsLost = damages[weapon] ?? 0;
-        const pointsGained = pointsLost / 2;
+    if (!target || target.points <= 0) return;
 
-        // update points
-        target.points = Math.max(target.points - pointsLost, 0);
-        player.points = player.points + pointsGained;
+    const damages = {
+        pistol: 16,
+        sniper: 32,
+        shotgun: 8,
+    };
+    const pointsLost = damages[weapon] ?? 0;
+    const pointsGained = pointsLost / 2;
 
+    // update points
+    target.points = Math.max(target.points - pointsLost, 0);
+    player.points = player.points + pointsGained;
+
+    sendToClients(
+        session,
+        JSON.stringify({
+            type: "hit",
+            player: player.username,
+            target: target.username,
+            weapon,
+        }),
+        true,
+        true
+    );
+
+    if (target.points <= 0) {
         sendToClients(
             session,
             JSON.stringify({
-                type: "hit",
-                player: player.username,
-                target: target.username,
+                type: "elimination",
+                player: target.username,
                 weapon,
             }),
             true,
             true
         );
-
-        if (target.points <= 0) {
-            sendToClients(
-                session,
-                JSON.stringify({
-                    type: "elimination",
-                    player: target.username,
-                    weapon,
-                }),
-                true,
-                true
-            );
-        }
-    } else if (codeId === 10) {
-        // powerup
-        // TODO: powerups
     }
 }
 
