@@ -7,22 +7,18 @@ import { useNavigate, useLocation } from "react-router-dom";
 export default function Calibration() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const socketRef = useRef(null);
   const [detector, setDetector] = useState(null);
   const [capturedPose, setCapturedPose] = useState(null);
   const [capturedColor, setCapturedColor] = useState(null);
-  const [capturedImageDataUrl, setCapturedImageDataUrl] = useState(null);
-  const [name, setName] = useState("");
-  const [entries, setEntries] = useState([]);
-
   const [username, setUsername] = useState("");
-  const navigate = useNavigate();
 
+  const navigate = useNavigate();
   const location = useLocation();
   const { gameCode } = location.state || {};
 
   useEffect(() => {
     async function init() {
-      await tf.setBackend("webgl"); // or 'cpu' if you want a fallback
       await tf.ready();
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -40,19 +36,51 @@ export default function Calibration() {
 
       const loadedDetector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
-        {
-          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-          enableSmoothing: true,
-          runtime: "tfjs", // using TensorFlow.js runtime
-        }
+        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
       );
-
       setDetector(loadedDetector);
       renderLoop(loadedDetector);
     }
 
     init();
-  }, []);
+
+    const socket = new WebSocket(
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}/calibration`
+    );
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log("🔗 WebSocket connected to calibration channel.");
+    };
+
+    socket.onmessage = (event) => {
+      const message = event.data.trim().toLowerCase();
+      console.log("📨 Message from server:", message);
+
+      if (message === "yes") {
+        navigate("/player_lobby", {
+          state: {
+            color: capturedColor,
+            username,
+            gameCode,
+          },
+        });
+      } else if (message === "no") {
+        alert("Colour already in use");
+        // Stay on the page
+      }
+    };
+
+    socket.onerror = (err) => {
+      console.error("❌ WebSocket error in Calibration:", err);
+    };
+
+    socket.onclose = () => {
+      console.log("🔌 Calibration WebSocket closed.");
+    };
+
+    return () => socket.close();
+  }, [gameCode, capturedColor, username, navigate]);
 
   function getKeypoint(keypoints, name) {
     return keypoints.find((k) => k.name === name || k.part === name);
@@ -88,36 +116,6 @@ export default function Calibration() {
     }
 
     return modeColor;
-  }
-
-  function getColorName(rgbString) {
-    const cssColors = {
-      red: [255, 0, 0],
-      green: [0, 128, 0],
-      blue: [0, 0, 255],
-      yellow: [255, 255, 0],
-      purple: [128, 0, 128],
-      cyan: [0, 255, 255],
-      orange: [255, 165, 0],
-      pink: [255, 192, 203],
-      lime: [0, 255, 0],
-      navy: [0, 0, 128],
-    };
-
-    const [r, g, b] = rgbString.match(/\d+/g).map(Number);
-
-    let closestName = "";
-    let minDist = Infinity;
-
-    for (const [name, [cr, cg, cb]] of Object.entries(cssColors)) {
-      const dist = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
-      if (dist < minDist) {
-        minDist = dist;
-        closestName = name;
-      }
-    }
-
-    return closestName;
   }
 
   async function renderLoop(detector) {
@@ -199,23 +197,22 @@ export default function Calibration() {
       return;
     }
 
-    setCapturedColor(getModeColorFromPoints(ctx, ls, rs));
-    setCapturedImageDataUrl(canvas.toDataURL("image/png"));
-  }
+    const modeColor = getModeColorFromPoints(ctx, ls, rs);
+    setCapturedColor(modeColor);
 
-  function saveData() {
-    if (!name || !capturedColor || !capturedImageDataUrl) return;
-    const colorName = getColorName(capturedColor);
-    setEntries((prev) => [
-      ...prev,
-      {
-        name,
-        image: capturedImageDataUrl,
-        color: capturedColor,
-        colorName,
-      },
-    ]);
-    setName("");
+    const message = {
+      type: "calibration",
+      username,
+      gameCode,
+      color: modeColor,
+    };
+
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify(message));
+      console.log("📤 Sent calibration data to server:", message);
+    } else {
+      alert("WebSocket is not connected.");
+    }
   }
 
   return (
@@ -229,55 +226,48 @@ export default function Calibration() {
       ></video>
       <canvas ref={canvasRef}></canvas>
 
-      <div style={{ marginTop: "1rem" }}>
-        <button onClick={capturePose}>Capture</button>
+      <div
+        style={{
+          marginTop: "1rem",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         <input
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter name"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Enter your username"
+          style={{
+            padding: "0.75rem 1.25rem",
+            fontSize: "1.2rem",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+            backgroundColor: "#222",
+            color: "#fff",
+            marginBottom: "1rem",
+            width: "250px",
+            textAlign: "center",
+          }}
         />
-        <button onClick={saveData}>Save</button>
-      </div>
 
-      <div style={{ marginTop: "1rem" }}>
-        {entries.map((entry, index) => (
-          <div key={index} style={{ marginBottom: "1rem" }}>
-            <img src={entry.image} alt="snapshot" width="150" />
-            <br />
-            <strong>{entry.name}</strong>
-            <br />
-            <span
-              style={{
-                display: "inline-block",
-                width: "30px",
-                height: "30px",
-                background: entry.color,
-                border: "1px solid white",
-              }}
-            ></span>
-            {entry.colorName} ({entry.color})
-          </div>
-        ))}
+        <button
+          onClick={capturePose}
+          style={{
+            padding: "0.75rem 2rem",
+            fontSize: "1.1rem",
+            backgroundColor: "#0ea5e9",
+            color: "#fff",
+            border: "none",
+            borderRadius: "10px",
+            cursor: "pointer",
+            transition: "background 0.3s",
+          }}
+        >
+          📸 Capture Pose
+        </button>
       </div>
-      <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>Enter Username:</h1>
-      <input
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
-        style={{
-          padding: "0.5rem 1rem",
-          fontSize: "1rem",
-          borderRadius: "5px",
-          border: "none",
-          marginBottom: "0.75rem",
-          textAlign: "center",
-          backgroundColor: "#333",
-          color: "#fff",
-          outline: "none",
-        }}
-      />
     </div>
   );
 }
