@@ -9,59 +9,71 @@ export default function SpectatorStreaming() {
   const location = useLocation();
   const { gameCode } = location.state || {};
 
-  // Connect to WebSocket as spectator
   useEffect(() => {
-    const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}/spectator`
-    );
+    const socketUrl = `wss://bbd-lasertag.onrender.com/session/${gameCode}/spectator`;
+    console.log("Connecting to WebSocket at:", socketUrl);
+    const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log("Connected as spectator to session:", gameCode);
+      console.log("✅ Connected as spectator to session:", gameCode);
     };
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log("📦 Raw WebSocket message received:", data);
 
-      if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
-        console.log("Received frames:", data.frames);
-        setFrames(data.frames);
+        if (data.type === "cameraFramesBatch") {
+          console.log("✅ Detected cameraFramesBatch");
 
-        // Reset current index if current player is gone
-        if (
-          frames.length > 0 &&
-          !data.frames.find(
-            (f) => f.username === frames[currentIndex]?.username
-          )
-        ) {
-          setCurrentIndex(0);
+          if (Array.isArray(data.frames)) {
+            console.log("📷 Received frames array:", data.frames);
+            setFrames(data.frames);
+
+            const currentUsername = frames[currentIndex]?.username;
+            const stillExists = data.frames.find(
+              (f) => f.username === currentUsername
+            );
+            if (!stillExists) {
+              console.log("ℹ️ Current player left — resetting to first player");
+              setCurrentIndex(0);
+            }
+          } else {
+            console.warn("⚠️ 'frames' is not an array:", data.frames);
+          }
         }
+      } catch (err) {
+        console.error("❌ Failed to parse WebSocket message:", err);
       }
     };
 
     socket.onerror = (err) => {
-      console.error("WebSocket error:", err);
+      console.error("❌ WebSocket error:", err);
     };
 
     socket.onclose = () => {
-      console.log("Spectator WebSocket closed.");
+      console.log("🛑 Spectator WebSocket closed.");
     };
 
     return () => {
       socket.close();
     };
-  }, [gameCode]);
+  }, [gameCode, frames, currentIndex]);
 
   const goToNext = () => {
+    console.log("➡️ Going to next player");
     setCurrentIndex((prev) => (prev + 1) % frames.length);
   };
 
   const goToPrev = () => {
+    console.log("⬅️ Going to previous player");
     setCurrentIndex((prev) => (prev - 1 + frames.length) % frames.length);
   };
 
   const currentFrame = frames[currentIndex];
-  console.log("Current Frame" + currentFrame);
+  console.log("🎯 Current Index:", currentIndex);
+  console.log("🎥 Current Frame Object:", currentFrame);
 
   return (
     <div
@@ -84,7 +96,7 @@ export default function SpectatorStreaming() {
           : "Waiting for player streams..."}
       </h2>
 
-      {currentFrame && (
+      {currentFrame && currentFrame.frame && (
         <img
           src={currentFrame.frame}
           alt={`Live stream from ${currentFrame.username}`}
