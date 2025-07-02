@@ -30,23 +30,27 @@ export default function SpectatorStreaming() {
 
         // ✅ Handle camera frames
         if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
-          const currentUsername = usernames[currentIndex];
-          const frameForCurrentUser = data.frames.find(
-            (f) => f.username === currentUsername
-          );
-
-          if (frameForCurrentUser) {
-            setFrameMap((prev) => {
-              const newMap = new Map(prev);
-              newMap.set(
-                frameForCurrentUser.username,
-                frameForCurrentUser.frame
-              );
-              return newMap;
-            });
-          }
-
           const incomingUsernames = data.frames.map((f) => f.username);
+          const currentUsername = usernames[currentIndex];
+
+          setFrameMap((prev) => {
+            const newMap = new Map();
+
+            // Keep only frames for current batch of usernames
+            for (const frame of data.frames) {
+              newMap.set(frame.username, frame.frame);
+            }
+
+            // Log removal of usernames
+            for (const key of prev.keys()) {
+              if (!incomingUsernames.includes(key)) {
+                console.log(`❌ Removing ${key} from frameMap (user left)`);
+              }
+            }
+
+            return newMap;
+          });
+
           if (
             incomingUsernames.length !== usernames.length ||
             !incomingUsernames.every((name, i) => name === usernames[i])
