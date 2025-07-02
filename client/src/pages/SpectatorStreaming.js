@@ -61,6 +61,7 @@ export default function SpectatorStreaming() {
   };
 
   const currentFrame = frames[currentIndex];
+  console.log("Current Frame" + currentFrame);
 
   return (
     <div
