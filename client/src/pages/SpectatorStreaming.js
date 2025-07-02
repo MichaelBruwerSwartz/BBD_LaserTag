@@ -9,6 +9,7 @@ export default function SpectatorStreaming() {
   const location = useLocation();
   const { gameCode } = location.state || {};
 
+  // Connect to WebSocket as spectator
   useEffect(() => {
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}/spectator`
@@ -22,18 +23,19 @@ export default function SpectatorStreaming() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      console.log("Received data:", data);
-
       if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
-        console.log("Frames array:", data.frames);
+        console.log("Received frames:", data.frames);
+        setFrames(data.frames);
 
-        data.frames.forEach((frameObj, index) => {
-          console.log(
-            `Frame ${index}: username = ${frameObj.username}, frame = [truncated]`
-          );
-        });
-
-        setFrames(data.frames); // update the full frame list
+        // Reset current index if current player is gone
+        if (
+          frames.length > 0 &&
+          !data.frames.find(
+            (f) => f.username === frames[currentIndex]?.username
+          )
+        ) {
+          setCurrentIndex(0);
+        }
       }
     };
 
@@ -58,7 +60,7 @@ export default function SpectatorStreaming() {
     setCurrentIndex((prev) => (prev - 1 + frames.length) % frames.length);
   };
 
-  const current = frames[currentIndex];
+  const currentFrame = frames[currentIndex];
 
   return (
     <div
@@ -71,18 +73,20 @@ export default function SpectatorStreaming() {
         alignItems: "center",
         justifyContent: "center",
         color: "white",
+        padding: "20px",
+        boxSizing: "border-box",
       }}
     >
       <h2 style={{ marginBottom: "20px" }}>
-        {current
-          ? `Viewing: ${current.username}`
+        {currentFrame
+          ? `Viewing: ${currentFrame.username}`
           : "Waiting for player streams..."}
       </h2>
 
-      {current?.frame && (
+      {currentFrame && (
         <img
-          src={current.frame}
-          alt={`Live stream from ${current.username}`}
+          src={currentFrame.frame}
+          alt={`Live stream from ${currentFrame.username}`}
           style={{
             width: "90%",
             maxWidth: "800px",
@@ -96,36 +100,24 @@ export default function SpectatorStreaming() {
 
       {frames.length > 1 && (
         <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
-          <button
-            onClick={goToPrev}
-            style={{
-              fontSize: "24px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#1f2937",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            ← Previous
+          <button onClick={goToPrev} style={buttonStyle}>
+            ⬅️ Previous
           </button>
-          <button
-            onClick={goToNext}
-            style={{
-              fontSize: "24px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#1f2937",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            Next →
+          <button onClick={goToNext} style={buttonStyle}>
+            Next ➡️
           </button>
         </div>
       )}
     </div>
   );
 }
+
+const buttonStyle = {
+  fontSize: "20px",
+  padding: "10px 20px",
+  borderRadius: "8px",
+  border: "none",
+  backgroundColor: "#1f2937",
+  color: "#fff",
+  cursor: "pointer",
+};
