@@ -15,62 +15,137 @@ export default function PlayerLobby() {
   const [players, setPlayers] = useState([]);
   const [adminUsername, setAdminUsername] = useState("");
   const socketRef = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
+  const reconnectTimeoutRef = useRef(null);
 
   const { state } = useLocation();
   const { gameCode, username, color } = state || {};
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (gameCode == null || username == null || color == null) return;
-    if (socketRef.current) return;
+    // Early return if required data is missing
+    if (!gameCode || !username || !color) {
+      console.warn("❌ Missing required data:", { gameCode, username, color });
+      return;
+    }
 
-    const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
-    );
-    socketRef.current = socket;
+    function connectWebSocket() {
+      // Don't create multiple connections
+      if (
+        socketRef.current &&
+        socketRef.current.readyState === WebSocket.OPEN
+      ) {
+        console.log("🔗 WebSocket already connected, skipping...");
+        return;
+      }
 
-    console.log("WebSocket initialized", socket);
+      console.log(
+        `🔄 Connecting to WebSocket (attempt ${reconnectAttempts.current + 1})`
+      );
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("Message received:", data);
-      if (data.type === "playerListUpdate") {
-        console.log("THIS IS THE PLAYERLIST", data.playerList);
-        setPlayers(data.playerList);
-        setAdminUsername(data.admin);
-      } else if (data.type === "startGame") {
-        const currentPlayer = data.playerList.find(
-          (p) => p.username === username
+      const socket = new WebSocket(
+        `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
+      );
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        console.log("🔗 PlayerLobby WebSocket connected");
+        reconnectAttempts.current = 0; // Reset on successful connection
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("📨 PlayerLobby message received:", data);
+
+          if (data.type === "playerListUpdate") {
+            console.log("👥 Player list update:", data.playerList);
+            setPlayers(data.playerList);
+            setAdminUsername(data.admin);
+          } else if (data.type === "startGame") {
+            const currentPlayer = data.playerList.find(
+              (p) => p.username === username
+            );
+
+            navigate("/camera_view", {
+              state: {
+                username,
+                gameCode,
+                codeId: currentPlayer?.codeId,
+              },
+            });
+          }
+        } catch (error) {
+          console.error("❌ Error parsing WebSocket message:", error);
+        }
+      };
+
+      socket.onclose = (event) => {
+        console.log(
+          `🔌 PlayerLobby WebSocket closed. Code: ${event.code}, Reason: "${event.reason}", WasClean: ${event.wasClean}`
         );
 
-        navigate("/camera_view", {
-          state: {
-            username,
-            gameCode,
-            codeId: currentPlayer?.codeId,
-          },
-        });
-      }
-    };
+        // Only attempt reconnection for unexpected closures
+        if (
+          event.code !== 1000 &&
+          event.code !== 1001 &&
+          reconnectAttempts.current < maxReconnectAttempts
+        ) {
+          reconnectAttempts.current++;
+          const delay = Math.min(
+            1000 * Math.pow(2, reconnectAttempts.current),
+            10000
+          );
+          console.log(
+            `🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current}/${maxReconnectAttempts})`
+          );
 
-    socket.onclose = () => console.log("WebSocket closed");
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connectWebSocket();
+          }, delay);
+        } else if (reconnectAttempts.current >= maxReconnectAttempts) {
+          console.error("❌ Max reconnection attempts reached for PlayerLobby");
+          alert("Connection lost. Please refresh the page.");
+        }
+      };
 
-    socket.onerror = (e) => console.error("WebSocket error", e);
+      socket.onerror = (error) => {
+        console.error("❌ PlayerLobby WebSocket error:", error);
+      };
+    }
+
+    connectWebSocket();
 
     return () => {
-      socket.close();
-      socketRef.current = null;
+      console.log("🧹 PlayerLobby cleanup - closing WebSocket");
+
+      // Clear reconnection timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      // Close WebSocket with normal closure code
+      if (socketRef.current) {
+        socketRef.current.close(1000, "Component unmounting");
+        socketRef.current = null;
+      }
     };
-  }, [gameCode, username, navigate]);
+  }, [gameCode, username, color, navigate]); // ✅ Include ALL dependencies
 
   const handleStartGame = () => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      console.log("🎮 Starting game...");
       socketRef.current.send(
         JSON.stringify({
           type: "startGame",
           gameCode,
         })
       );
+    } else {
+      console.warn("⚠️ Cannot start game - WebSocket not connected");
+      alert("Connection lost. Please refresh the page.");
     }
   };
 
@@ -206,9 +281,7 @@ export default function PlayerLobby() {
             position: "relative",
             animation: "float 3s ease-in-out infinite",
           }}
-          onClick={() => {
-            handleStartGame();
-          }}
+          onClick={handleStartGame}
         >
           Start Game
         </button>
