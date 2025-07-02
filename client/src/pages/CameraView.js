@@ -436,6 +436,22 @@ export default function CameraView() {
     return () => clearInterval(intervalId);
   }, [username]);
 
+  // Poll leaderboard every 2 seconds
+  useEffect(() => {
+    let intervalId;
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      intervalId = setInterval(() => {
+        socketRef.current.send(
+          JSON.stringify({
+            type: "requestLeaderboard",
+          })
+        );
+      }, 2000); // 2-second interval
+    }
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
     <div
       style={{
@@ -638,7 +654,7 @@ export default function CameraView() {
           <h3 style={{ margin: "0 0 10px 0", textAlign: "center" }}>
             Leaderboard
           </h3>
-          {sortedPlayers.map(({ username, points, kills }, i) => (
+          {sortedPlayers.map(({ username, points }, i) => (
             <div
               key={username}
               style={{
@@ -650,7 +666,7 @@ export default function CameraView() {
               }}
             >
               <div>
-                {username} - Points: {points} Kills: {kills}
+                {username} - Rank: {i + 1}, Points: {points}
               </div>
             </div>
           ))}
