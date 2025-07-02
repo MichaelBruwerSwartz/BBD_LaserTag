@@ -13,6 +13,7 @@ export default function CameraView() {
   const [gunType, setGunType] = useState("pistol");
   const [zoomEnabled, setZoomEnabled] = useState(false);
   const navigate = useNavigate();
+  const [activePowerup, setActivePowerup] = useState(null);
 
   // Game state
   const [gameTimeString, setGameTimeString] = useState("00:00");
@@ -86,6 +87,16 @@ export default function CameraView() {
           }
         }
       }
+      if (data.type === "powerup") {
+        const { powerup, duration } = data;
+        console.log(`⚡ Powerup received: ${powerup} for ${duration}s`);
+        setActivePowerup(powerup);
+
+        // Clear after duration
+        setTimeout(() => {
+          setActivePowerup(null);
+        }, duration * 1000);
+      }
     };
     socket.onclose = () => console.log("WebSocket closed");
     socket.onerror = (e) => console.error("WebSocket error", e);
@@ -147,7 +158,7 @@ export default function CameraView() {
       green: [0, 180, 0],
       blue: [0, 128, 255],
       purple: [128, 0, 255],
-      pink: [255, 0, 255]
+      pink: [255, 0, 255],
     };
     const [r, g, b] = rgbString.match(/\d+/g).map(Number);
     let closestName = "";
@@ -159,7 +170,7 @@ export default function CameraView() {
         closestName = name;
       }
     }
-    console.log(`RGB string: ${rgbString} | closest color: ${closestName}`)
+    console.log(`RGB string: ${rgbString} | closest color: ${closestName}`);
     return closestName;
   }
 
@@ -490,6 +501,25 @@ export default function CameraView() {
         }}
       />
 
+      {activePowerup && (
+        <div
+          style={{
+            position: "absolute",
+            top: "10%",
+            right: "5%",
+            backgroundColor: "rgba(255, 215, 0, 0.8)",
+            color: "black",
+            fontSize: "20px",
+            padding: "10px 16px",
+            borderRadius: "10px",
+            fontWeight: "bold",
+            zIndex: 10,
+          }}
+        >
+          Powerup: {activePowerup}
+        </div>
+      )}
+
       <div
         ref={logRef}
         style={{
@@ -572,8 +602,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                    ? "/sniper.png"
-                    : "/pistol.png"
+                  ? "/sniper.png"
+                  : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
