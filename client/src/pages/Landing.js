@@ -126,26 +126,6 @@ export default function LandingPage() {
             outline: "none",
           }}
         />
-        <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>
-          Enter Username:
-        </h1>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "1rem",
-            borderRadius: "5px",
-            border: "none",
-            marginBottom: "0.75rem",
-            textAlign: "center",
-            backgroundColor: "#333",
-            color: "#fff",
-            outline: "none",
-          }}
-        />
 
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
           <button
