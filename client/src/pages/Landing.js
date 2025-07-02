@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -111,7 +110,11 @@ export default function LandingPage() {
         <input
           type="text"
           value={gameCode}
-          onChange={(e) => setGameCode(e.target.value.replace(/[^a-zA-Z]/g, '').toLocaleLowerCase())}
+          onChange={(e) =>
+            setGameCode(
+              e.target.value.replace(/[^a-zA-Z]/g, "").toLocaleLowerCase()
+            )
+          }
           placeholder="Game Code"
           style={{
             padding: "0.5rem 1rem",
@@ -125,7 +128,9 @@ export default function LandingPage() {
             outline: "none",
           }}
         />
-        <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>Enter Username:</h1>
+        <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>
+          Enter Username:
+        </h1>
         <input
           type="text"
           value={username}

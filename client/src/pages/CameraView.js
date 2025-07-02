@@ -37,6 +37,7 @@ export default function CameraView() {
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
     );
+
     socketRef.current = socket;
 
     socket.onopen = () => {
@@ -252,7 +253,12 @@ export default function CameraView() {
         const b = Math.round(meanColor[2]);
         const colorName = getColorName(r, g, b);
 
-        if ((shape === "Triangle" || shape == "Rectangle" || shape == "Sqaure") && dist >= 0) {
+        if (
+          (shape === "Triangle" ||
+            shape === "Rectangle" ||
+            shape === "Sqaure") &&
+          dist >= 0
+        ) {
           hitDetected(colorName, "Triangle");
         }
 
@@ -465,8 +471,8 @@ export default function CameraView() {
             gunType === "shotgun"
               ? "/shotgun.png"
               : gunType === "sniper"
-                ? "/sniper.png"
-                : "/pistol.png"
+              ? "/sniper.png"
+              : "/pistol.png"
           }
           alt="Shoot"
           onClick={handleShoot}
@@ -525,78 +531,88 @@ export default function CameraView() {
       {/* leaderboard */}
       <div
         style={{
-          position: 'absolute',
-          bottom: '20px',
-          right: '20px',
-          backgroundColor: '#1f2937',
-          border: '2px solid #374151',
-          borderRadius: '12px',
-          padding: '16px',
-          minWidth: '200px',
-          maxHeight: '300px',
-          overflowY: 'auto',
-          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.4)',
-          color: '#ffffff',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          fontSize: '14px',
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          backgroundColor: "#1f2937",
+          border: "2px solid #374151",
+          borderRadius: "12px",
+          padding: "16px",
+          minWidth: "200px",
+          maxHeight: "300px",
+          overflowY: "auto",
+          boxShadow: "0 8px 25px rgba(0, 0, 0, 0.4)",
+          color: "#ffffff",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontSize: "14px",
           zIndex: 1000,
         }}
       >
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '12px',
-            paddingBottom: '8px',
-            borderBottom: '1px solid #4b5563',
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "12px",
+            paddingBottom: "8px",
+            borderBottom: "1px solid #4b5563",
           }}
         >
-          <span style={{ fontSize: '16px', marginRight: '8px' }}>🏆</span>
+          <span style={{ fontSize: "8px", marginRight: "8px" }}>🏆</span>
           <h3
             style={{
               margin: 0,
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#f3f4f6',
+              fontSize: "16px",
+              fontWeight: "600",
+              color: "#f3f4f6",
             }}
           >
             Leaderboard
           </h3>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {sortedPlayers.length > 0 ? (
             sortedPlayers.map((player, index) => (
               <div
                 key={player.username}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 12px',
-                  backgroundColor: index === 0 ? '#fbbf24' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : '#374151',
-                  color: index < 3 ? '#000000' : '#ffffff',
-                  borderRadius: '8px',
-                  fontWeight: index < 3 ? '600' : '400',
-                  transition: 'all 0.2s ease',
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "8px 12px",
+                  backgroundColor:
+                    index === 0
+                      ? "#fbbf24"
+                      : index === 1
+                      ? "#c0c0c0"
+                      : index === 2
+                      ? "#cd7f32"
+                      : "#374151",
+                  color: index < 3 ? "#000000" : "#ffffff",
+                  borderRadius: "8px",
+                  fontWeight: index < 3 ? "600" : "400",
+                  transition: "all 0.2s ease",
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
                   <span
                     style={{
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      minWidth: '20px',
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      minWidth: "20px",
                     }}
                   >
                     #{index + 1}
                   </span>
-                  <span style={{ fontWeight: '500' }}>{player.username}</span>
+                  <span style={{ fontWeight: "500" }}>{player.username}</span>
                 </div>
                 <span
                   style={{
-                    fontWeight: '600',
-                    fontSize: '14px',
+                    fontWeight: "600",
+                    fontSize: "14px",
                   }}
                 >
                   {player.points}
@@ -606,10 +622,10 @@ export default function CameraView() {
           ) : (
             <div
               style={{
-                textAlign: 'center',
-                color: '#9ca3af',
-                fontStyle: 'italic',
-                padding: '16px',
+                textAlign: "center",
+                color: "#9ca3af",
+                fontStyle: "italic",
+                padding: "16px",
               }}
             >
               No players yet

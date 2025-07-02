@@ -21,7 +21,7 @@ export default function PlayerLobby() {
 
     console.log("WebSocket initialized", socket);
 
-    let navigatingToSpectator = false
+    let navigatingToSpectator = false;
 
     socket.onmessage = (event) => {
       if (navigatingToSpectator) return;
@@ -34,7 +34,9 @@ export default function PlayerLobby() {
         setPlayers(data.playerList);
         setAdminUsername(data.admin);
       } else if (data.type === "startGame") {
-        const currentPlayer = data.playerList.find((p) => p.username === username);
+        const currentPlayer = data.playerList.find(
+          (p) => p.username === username
+        );
         console.log("Navigating with player color", currentPlayer?.color);
 
         navigate("/camera_view", {
@@ -46,8 +48,10 @@ export default function PlayerLobby() {
         });
       } else if (data.type === "gameUpdate") {
         // if this is received, it means the game has started -> navigate to spectator view
-        navigatingToSpectator = true
-        alert("The game has already started, you will be taken to the spectator view.");
+        navigatingToSpectator = true;
+        alert(
+          "The game has already started, you will be taken to the spectator view."
+        );
         navigate("/spectator_lobby", {
           state: { gameCode },
         });
@@ -82,7 +86,8 @@ export default function PlayerLobby() {
         backgroundColor: "#0f0f0f",
         minHeight: "100vh",
         color: "#ffffff",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -90,31 +95,40 @@ export default function PlayerLobby() {
       }}
     >
       <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-        <h1 style={{
-          fontSize: "2rem",
-          margin: "0 0 0.5rem 0",
-          fontWeight: "600"
-        }}>
+        <h1
+          style={{
+            fontSize: "2rem",
+            margin: "0 0 0.5rem 0",
+            fontWeight: "600",
+          }}
+        >
           Game Code: <span style={{ color: "#3b82f6" }}>{gameCode}</span>
         </h1>
-        <h2 style={{
-          fontSize: "1.25rem",
-          margin: "0",
-          fontWeight: "400",
-          color: "#d1d5db"
-        }}>
-          You are: <span style={{ color: "#3b82f6", fontWeight: "500" }}>{username}</span>
+        <h2
+          style={{
+            fontSize: "1.25rem",
+            margin: "0",
+            fontWeight: "400",
+            color: "#d1d5db",
+          }}
+        >
+          You are:{" "}
+          <span style={{ color: "#3b82f6", fontWeight: "500" }}>
+            {username}
+          </span>
         </h2>
       </div>
 
       <div style={{ width: "100%", maxWidth: "500px" }}>
-        <h3 style={{
-          fontSize: "1.25rem",
-          marginBottom: "1rem",
-          textAlign: "center",
-          fontWeight: "500",
-          color: "#f3f4f6"
-        }}>
+        <h3
+          style={{
+            fontSize: "1.25rem",
+            marginBottom: "1rem",
+            textAlign: "center",
+            fontWeight: "500",
+            color: "#f3f4f6",
+          }}
+        >
           Players in Lobby
         </h3>
 
@@ -138,20 +152,28 @@ export default function PlayerLobby() {
                   padding: "1rem 1.25rem",
                   borderRadius: "12px",
                   fontWeight: playerName === username ? "600" : "400",
-                  border: playerName === username ? "2px solid gray" : "1px solid #4b5563",
+                  border:
+                    playerName === username
+                      ? "2px solid gray"
+                      : "1px solid #4b5563",
                   textAlign: "center",
                   fontSize: "1rem",
-                  boxShadow: playerName === username ? "0 0 0 1px rgba(59, 130, 246, 0.3)" : "none",
+                  boxShadow:
+                    playerName === username
+                      ? "0 0 0 1px rgba(59, 130, 246, 0.3)"
+                      : "none",
                   transition: "all 0.2s ease",
                 }}
               >
                 {playerName}
                 {playerName === adminUsername && (
-                  <span style={{
-                    marginLeft: "0.5rem",
-                    fontSize: "1.1em",
-                    filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
-                  }}>
+                  <span
+                    style={{
+                      marginLeft: "0.5rem",
+                      fontSize: "1.1em",
+                      filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.5))",
+                    }}
+                  >
                     👑
                   </span>
                 )}
@@ -159,12 +181,14 @@ export default function PlayerLobby() {
             ))}
           </ul>
         ) : (
-          <p style={{
-            color: "#9ca3af",
-            textAlign: "center",
-            fontSize: "1rem",
-            fontStyle: "italic"
-          }}>
+          <p
+            style={{
+              color: "#9ca3af",
+              textAlign: "center",
+              fontSize: "1rem",
+              fontStyle: "italic",
+            }}
+          >
             Loading players...
           </p>
         )}
@@ -172,26 +196,26 @@ export default function PlayerLobby() {
 
       <div
         style={{
-          display: 'flex',
-          gap: '1rem',
+          display: "flex",
+          gap: "1rem",
           marginTop: "1rem",
         }}
       >
         <button
-          onClick={() => navigate('/', { state: { username, gameCode } })}
+          onClick={() => navigate("/", { state: { username, gameCode } })}
           style={{
-            padding: '0.75rem 1.5rem',
-            backgroundColor: '#6b7280',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            fontWeight: '500',
-            transition: 'all 0.2s ease',
+            padding: "0.75rem 1.5rem",
+            backgroundColor: "#6b7280",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "1rem",
+            fontWeight: "500",
+            transition: "all 0.2s ease",
           }}
-          onMouseOver={e => e.target.style.backgroundColor = '#4b5563'}
-          onMouseOut={e => e.target.style.backgroundColor = '#6b7280'}
+          onMouseOver={(e) => (e.target.style.backgroundColor = "#4b5563")}
+          onMouseOut={(e) => (e.target.style.backgroundColor = "#6b7280")}
         >
           Back
         </button>
@@ -210,11 +234,11 @@ export default function PlayerLobby() {
               transition: "all 0.2s ease",
               boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)",
             }}
-            onMouseOver={e => {
+            onMouseOver={(e) => {
               e.target.style.backgroundColor = "#059669";
               e.target.style.boxShadow = "0 4px 8px rgba(16, 185, 129, 0.3)";
             }}
-            onMouseOut={e => {
+            onMouseOut={(e) => {
               e.target.style.backgroundColor = "#10b981";
               e.target.style.boxShadow = "0 2px 4px rgba(16, 185, 129, 0.2)";
             }}
