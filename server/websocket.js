@@ -281,6 +281,7 @@ wss.on("connection", (ws, req) => {
 
 function handleHit(session, player, color, weapon) {
     if (color === 'cyan') return // invalid color
+    if (player.points <= 0) return // already eliminated
 
     // get target player from color
     let target;
