@@ -19,47 +19,35 @@ export default function Calibration() {
     let detectorInstance;
 
     async function init() {
-      try {
-        // Explicitly set WebGL backend and wait for it to be ready
-        await tf.setBackend("webgl");
-        await tf.ready();
-        console.log("TensorFlow.js backend set to:", tf.getBackend());
+      await tf.ready();
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
-          audio: false,
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      });
 
-        const video = videoRef.current;
-        if (!video) return;
-        video.srcObject = stream;
-        await video.play();
+      const video = videoRef.current;
+      if (!video) return;
+      video.srcObject = stream;
+      await video.play();
 
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
-        detectorInstance = await poseDetection.createDetector(
-          poseDetection.SupportedModels.MoveNet,
-          {
-            modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-          }
-        );
+      detectorInstance = await poseDetection.createDetector(
+        poseDetection.SupportedModels.MoveNet,
+        {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+        }
+      );
 
-        setDetector(detectorInstance);
-        renderLoop(detectorInstance);
-      } catch (err) {
-        console.error("Initialization error:", err);
-        alert(`Failed to initialize calibration. Error: ${err.message}`);
-      }
+      setDetector(detectorInstance);
+      renderLoop(detectorInstance);
     }
 
     init();
-
-    return () => {
-      if (detectorInstance) detectorInstance.dispose();
-    };
   }, []);
 
   function getKeypoint(keypoints, name) {
