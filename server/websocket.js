@@ -83,11 +83,22 @@ setInterval(() => {
                 // powerups
                 const powerups = ['invincibility', 'instakill']
                 for (let player of Object.values(session.players)) {
-                    if (Math.random() < 0.01) {
+                    // decrease durations
+                    for (let powerupId in player.activePowerups) {
+                        let v = player.activePowerups[powerupId]
+                        if (v > 0) player.activePowerups[powerupId]--
+                        console.log(`powerup ${powerupId}: ${player.activePowerups[powerupId]}`)
+                    }
+
+                    // give new
+                    if (Math.random() < 0.04) {
+                        const selectedPowerup = powerups[Math.floor(Math.random() * powerups.length)]
+                        const powerupDuration = 10
+                        player.activePowerups[selectedPowerup] = powerupDuration
                         player.connection.send(JSON.stringify({
                             type: 'powerup',
-                            powerup: powerups[Math.floor(Math.random() * powerups.length)],
-                            duration: 10
+                            powerup: selectedPowerup,
+                            duration: powerupDuration
                         }));
                     }
                 }
@@ -306,19 +317,24 @@ function handleHit(session, player, color, weapon) {
         }
     }
 
-    if (!target || target.points <= 0) return;
-
-    const damages = {
-        pistol: 16,
-        sniper: 32,
-        shotgun: 8,
-    };
-    const pointsLost = damages[weapon] ?? 0;
-    const pointsGained = pointsLost / 2;
+    if (!target || target.points <= 0 || target.activePowerups.invincibility > 0) return;
 
     // update points
-    target.points = Math.max(target.points - pointsLost, 0);
-    player.points = player.points + pointsGained;
+    if (player.activePowerups.instakill > 0) {
+        // has instakill powerup
+        let currentPoints = target.points
+        target.points = 0
+        player.points += Math.floor(currentPoints / 2)
+    } else {
+        const weaponDamages = {
+            pistol: 6,
+            sniper: 32,
+            shotgun: 12,
+        };
+        const damage = weaponDamages[weapon] ?? 0;
+        target.points = Math.max(0, target.points - damage)
+        player.points += Math.floor(damage / 2)
+    }
 
     // update hits
     player.hitsGiven++
