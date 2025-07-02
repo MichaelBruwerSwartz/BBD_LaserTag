@@ -533,8 +533,8 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            top: "10px",
-            left: "10px",
+            top: "2%",
+            left: "2%",
             backgroundColor: "rgba(31, 41, 55, 0.6)", // <- updated transparency
             border: "2px solid rgba(55, 65, 81, 0.7)", // <- softened border
             borderRadius: "12px",
