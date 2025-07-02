@@ -22,14 +22,12 @@ Sent to **players and spectators** when a player is eliminated.
 
 Sent to **players and spectators** every second and contains all game information.
 
-- `players` - players and their information
-  - key: player username
-  - value: object
-    - codeId
-    - color
-    - hitsGiven
-    - hitsReceived
-    - points
+- `players` - array of player objects
+  - username
+  - color
+  - hitsGiven
+  - hitsTaken
+  - points
 - `timeLeft` - time that remains in seconds
 
 ### `hit`
