@@ -300,12 +300,29 @@ export default function CameraView() {
   // Shoot button handler
   const handleShoot = () => {
     if (isReloading) return;
+
     if (ammo <= 0) {
-      reload();
+      // Prevent shooting with no ammo left
+      console.log("🔫 No ammo left — can't shoot");
       return;
     }
-    setAmmo((a) => a - 1);
+
+    // Fire the shot
+    setAmmo((prevAmmo) => {
+      const newAmmo = prevAmmo - 1;
+      console.log(`🔫 Shot fired. Ammo left: ${newAmmo}`);
+
+      // If this was the last bullet, trigger reload
+      if (newAmmo === 0) {
+        console.log("🔄 Auto-reloading...");
+        reload();
+      }
+
+      return newAmmo;
+    });
+
     if (navigator.vibrate) navigator.vibrate([75, 25, 75]);
+
     if (canvasRef.current) {
       checkHit(canvasRef.current);
     }
@@ -370,7 +387,9 @@ export default function CameraView() {
         }
       } catch (err) {
         console.error("Camera error:", err);
-        alert(`Camera access denied. Please allow permissions.\n\nError: ${err.message}`);
+        alert(
+          `Camera access denied. Please allow permissions.\n\nError: ${err.message}`
+        );
       }
     }
     startCamera();
@@ -520,8 +539,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                    ? "/sniper.png"
-                    : "/pistol.png"
+                  ? "/sniper.png"
+                  : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
@@ -576,9 +595,9 @@ export default function CameraView() {
             zIndex: 3,
           }}
         >
-          <button onClick={() => selectGun("pistol")}>🔫 Pistol</button>
-          <button onClick={() => selectGun("shotgun")}>💥 Shotgun</button>
-          <button onClick={() => selectGun("sniper")}>🎯 Sniper</button>
+          <button onClick={() => selectGun("pistol")}> Pistol</button>
+          <button onClick={() => selectGun("shotgun")}> Shotgun</button>
+          <button onClick={() => selectGun("sniper")}> Sniper</button>
         </div>
 
         <div
