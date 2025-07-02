@@ -114,52 +114,15 @@ export default function SpectatorStreaming() {
         position: "relative",
       }}
     >
-      {/* Background Image */}
-      <img
-        src="/images/laser-tag-landing.gif"
-        alt="Background"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          objectFit: "cover",
-          opacity: 0.3,
-          zIndex: -1,
-        }}
-      />
-
-      {/* Header with Logo */}
-      <div
-        style={{
-          width: "100%",
-          backgroundColor: "#800080",
-          padding: "15px 0",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <img
-          src="/images/Laser-Tag-Logo.png"
-          alt="Logo"
-          style={{
-            maxHeight: "80px",
-            maxWidth: "200px",
-            objectFit: "contain",
-          }}
-        />
-      </div>
-
       <h2 style={{ marginBottom: "20px" }}>
         {currentUsername
           ? `Viewing: ${currentUsername}`
           : "Waiting for player streams "}
         {!currentUsername && (
           <span className="loading-dots">
-            <span>.</span><span>.</span><span>.</span>
+            <span>.</span>
+            <span>.</span>
+            <span>.</span>
           </span>
         )}
       </h2>
