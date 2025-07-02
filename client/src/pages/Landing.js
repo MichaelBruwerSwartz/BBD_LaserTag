@@ -1,11 +1,19 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function LandingPage() {
   const [gameCode, setGameCode] = useState("");
   const [username, setUsername] = useState("");
   const navigate = useNavigate();
+
+  const { state } = useLocation();
+
+  useEffect(() => {
+    if (state) {
+      setGameCode(state.gameCode || "");
+      setUsername(state.username || "");
+    }
+  }, [state]);
 
   const joinPlayerLobby = () => {
     navigate("/player_lobby", {
@@ -21,6 +29,14 @@ export default function LandingPage() {
       state: {
         gameCode,
         username,
+      },
+    });
+  };
+
+  const joinSpectatorStreaming = () => {
+    navigate("/spectator_stream", {
+      state: {
+        gameCode,
       },
     });
   };
@@ -102,7 +118,11 @@ export default function LandingPage() {
         <input
           type="text"
           value={gameCode}
-          onChange={(e) => setGameCode(e.target.value)}
+          onChange={(e) =>
+            setGameCode(
+              e.target.value.replace(/[^a-zA-Z]/g, "").toLocaleLowerCase()
+            )
+          }
           placeholder="Game Code"
           style={{
             padding: "0.5rem 1rem",
@@ -116,7 +136,9 @@ export default function LandingPage() {
             outline: "none",
           }}
         />
-        <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>Enter Username:</h1>
+        <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>
+          Enter Username:
+        </h1>
         <input
           type="text"
           value={username}
@@ -170,6 +192,24 @@ export default function LandingPage() {
             onMouseOut={(e) => (e.target.style.backgroundColor = "#888")}
           >
             Join as Spectator
+          </button>
+
+          <button
+            onClick={() => joinSpectatorStreaming()}
+            style={{
+              padding: "0.75rem 1.5rem",
+              fontSize: "1rem",
+              borderRadius: "5px",
+              backgroundColor: "#888",
+              border: "none",
+              cursor: "pointer",
+              color: "#fff",
+              transition: "background-color 0.3s",
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = "#666")}
+            onMouseOut={(e) => (e.target.style.backgroundColor = "#888")}
+          >
+            Join spectator streaming
           </button>
         </div>
       </div>

@@ -9,12 +9,32 @@ export default function CameraView() {
   const [gunType, setGunType] = useState("pistol");
   const [zoomEnabled, setZoomEnabled] = useState(false);
 
-  //Game Details
-  //const [gameTime, setGameTime] = useState(0);
+  // Game Details
+  /*
+    TODO:
+    leaderboard: username, points
+    gameTime
+    powerup icons?
+  */
   const [gameTimeString, setGameTimeString] = useState("00:00");
+
+  const gunConfig = {
+    pistol: { ammo: 5, reloadTime: 1000 },
+    shotgun: { ammo: 2, reloadTime: 2000 },
+    sniper: { ammo: 1, reloadTime: 3000 },
+  };
+
+  const [ammo, setAmmo] = useState(gunConfig["pistol"].ammo);
+  const [isReloading, setIsReloading] = useState(false);
 
   const location = useLocation();
   const { username, gameCode, color } = location.state || {};
+
+  // leaderboard logic
+  const [leaderboardData, setLeaderboardData] = useState({});
+  const sortedPlayers = Object.entries(leaderboardData || {})
+    .map(([username, points]) => ({ username, points }))
+    .sort((a, b) => b.points - a.points);
 
   const socketRef = useRef(null);
   useEffect(() => {
@@ -23,10 +43,10 @@ export default function CameraView() {
       return;
     }
 
-    console.log(username, gameCode, color)
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
     );
+
     socketRef.current = socket;
 
     socket.onopen = () => {
@@ -35,17 +55,16 @@ export default function CameraView() {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Message from server:", data);
+      console.log("Received message from server:", data);
 
       // Add logic here for in-game updates
       if (data.type === "gameUpdate") {
-        console.log(data);
-        console.log("THIS IS THE TIME LEFT SENT" + data.timeLeft);
         const mins = Math.floor(data.timeLeft / 60);
-        const secs = data.timeLeft % 60; // <-- corrected variable name
+        const secs = data.timeLeft % 60;
         setGameTimeString(
           `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
         );
+        setLeaderboardData(data.players);
       }
     };
 
@@ -121,7 +140,6 @@ export default function CameraView() {
       logRef.current.textContent = `Hit sent: ${targetColor} ${targetShape} with ${gunType}`;
     }
   }
-
   function processVideoOnce(video, canvas) {
     const width = video.videoWidth;
     const height = video.videoHeight;
@@ -205,7 +223,7 @@ export default function CameraView() {
           Math.max(triRect.width, triRect.height) /
           Math.min(triRect.width, triRect.height);
         if (solidity > 0.85 && triangleAspectRatio < 2.5) {
-          shape = "Triangle";
+          shape = "triangle";
         }
       } else if (vertices === 4) {
         const rect = cv.minAreaRect(cnt);
@@ -213,6 +231,17 @@ export default function CameraView() {
           Math.max(rect.size.width, rect.size.height) /
           Math.min(rect.size.width, rect.size.height);
         shape = aspectRatio > 1.2 ? "Rectangle" : "Square";
+      } else {
+        // Circle detection
+        if (vertices > 6) {
+          const circleArea = Math.PI * Math.pow(Math.sqrt(area / Math.PI), 2);
+          const circularity = (4 * Math.PI * area) / (perimeter * perimeter);
+          const areaRatio = Math.abs(area - circleArea) / area;
+
+          if (circularity > 0.7 && areaRatio < 0.3 && solidity > 0.8) {
+            shape = "Circle";
+          }
+        }
       }
 
       if (shape) {
@@ -233,8 +262,13 @@ export default function CameraView() {
         const b = Math.round(meanColor[2]);
         const colorName = getColorName(r, g, b);
 
-        if (shape === "Triangle" && dist >= 0) {
-          hitDetected(colorName, shape);
+        if (
+          (shape === "triangle" ||
+            shape === "rectangle" ||
+            shape === "sqaure") &&
+          dist >= 0
+        ) {
+          hitDetected(colorName, "triangle");
         }
 
         // Draw contour
@@ -278,24 +312,48 @@ export default function CameraView() {
   }
 
   const handleShoot = () => {
-    console.log(`🔫 Shoot button clicked with ${gunType}!`);
+    if (isReloading) return; // disable shooting while reloading
+
+    if (ammo <= 0) {
+      reload(); // trigger automatic reload
+      return;
+    }
+
+    console.log(`Shoot button clicked with ${gunType}!`);
+    setAmmo(ammo - 1);
+
     if (navigator.vibrate) {
       navigator.vibrate([75, 25, 75]);
     }
 
-    if (window.cv && videoRef.current && canvasRef.current) {
-      processVideoOnce(videoRef.current, canvasRef.current);
-    }
+    // if (window.cv && videoRef.current && canvasRef.current) {
+    //   processVideoOnce(videoRef.current, canvasRef.current);
+    // }
   };
 
   const selectGun = (type) => {
     setGunType(type);
+    setAmmo(gunConfig[type].ammo);
+    setIsReloading(false); // cancel reload when switching guns
+
     setZoomEnabled(false);
     if (videoRef.current) {
       videoRef.current.style.transform =
         type === "sniper" ? "scale(3)" : "scale(1)";
       videoRef.current.style.transformOrigin = "center center";
     }
+  };
+
+  const reload = () => {
+    if (isReloading) return;
+    setIsReloading(true);
+
+    const reloadTime = gunConfig[gunType].reloadTime;
+
+    setTimeout(() => {
+      setAmmo(gunConfig[gunType].ammo);
+      setIsReloading(false);
+    }, reloadTime);
   };
 
   useEffect(() => {
@@ -328,7 +386,7 @@ export default function CameraView() {
     const startCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" } },
+          video: { facingMode: { ideal: "environment" } },
           audio: false,
         });
         videoRef.current.srcObject = stream;
@@ -362,6 +420,51 @@ export default function CameraView() {
     };
 
     startCamera();
+  }, []);
+
+  // This sends the streaming frame
+  useEffect(() => {
+    let intervalId;
+
+    const checkAndStartStreaming = () => {
+      const video = videoRef.current;
+      const socket = socketRef.current;
+
+      if (!video || !socket) return;
+
+      if (socket.readyState === WebSocket.OPEN) {
+        intervalId = setInterval(() => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+
+          const frame = canvas.toDataURL("image/jpeg", 0.5);
+
+          socket.send(
+            JSON.stringify({
+              type: "cameraFrame",
+              username,
+              frame,
+            })
+          );
+        }, 50);
+      } else {
+        // Wait and retry until socket is open
+        const waitForSocket = setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            clearInterval(waitForSocket);
+            checkAndStartStreaming(); // try again
+          }
+        }, 100);
+      }
+    };
+
+    checkAndStartStreaming();
+
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
@@ -440,34 +543,80 @@ export default function CameraView() {
           }}
         />
 
-        <img
-          key={gunType}
-          src={
-            gunType === "shotgun"
-              ? "/shotgun.png"
-              : gunType === "sniper"
-              ? "/sniper.png"
-              : "/pistol.png"
-          }
-          alt="Shoot"
-          onClick={handleShoot}
+        <div
           style={{
             position: "absolute",
             bottom: "10%",
             left: "50%",
-            width: "150px",
-            height: "150px",
             transform: "translateX(-50%)",
-            cursor: "pointer",
-            transition: "transform 0.1s ease-in-out",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "20px",
           }}
-          onTouchStart={(e) => {
-            e.currentTarget.style.transform = "translateX(-50%) scale(0.95)";
-          }}
-          onTouchEnd={(e) => {
-            e.currentTarget.style.transform = "translateX(-50%) scale(1)";
-          }}
-        />
+        >
+          {/* Gun & Bullets (vertically aligned) */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <img
+              key={gunType}
+              src={
+                gunType === "shotgun"
+                  ? "/shotgun.png"
+                  : gunType === "sniper"
+                  ? "/sniper.png"
+                  : "/pistol.png"
+              }
+              alt="Shoot"
+              onClick={handleShoot}
+              style={{
+                width: "150px",
+                height: "150px",
+                cursor: "pointer",
+                transition: "transform 0.1s ease-in-out",
+              }}
+              onTouchStart={(e) => {
+                e.currentTarget.style.transform = "scale(0.95)";
+              }}
+              onTouchEnd={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            />
+
+            {/* Bullet icons */}
+            <div style={{ display: "flex", gap: "4px", marginTop: "10px" }}>
+              {Array.from({ length: ammo }).map((_, i) => (
+                <img
+                  key={i}
+                  src="/bullet.png"
+                  alt="Bullet"
+                  style={{ width: "40px", height: "40px" }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {isReloading && (
+            <div
+              style={{
+                color: "#ff4444",
+                backgroundColor: "rgba(0,0,0,0.6)",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
+              Reloading...
+            </div>
+          )}
+        </div>
 
         <div
           style={{
@@ -484,22 +633,134 @@ export default function CameraView() {
           <button onClick={() => selectGun("shotgun")}>💥 Shotgun</button>
           <button onClick={() => selectGun("sniper")}>🎯 Sniper</button>
         </div>
+        <div style={{ display: "flex" }}>
+          <div
+            style={{
+              position: "absolute",
+              top: "2%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "white",
+              fontSize: "18px",
+              fontWeight: "bold",
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              padding: "6px 12px",
+              borderRadius: "8px",
+              zIndex: 5,
+            }}
+          >
+            {gameTimeString}
+          </div>
+        </div>
+
+        {/* leaderboard */}
         <div
           style={{
             position: "absolute",
             top: "2%",
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "white",
-            fontSize: "24px",
-            fontWeight: "bold",
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            padding: "6px 12px",
-            borderRadius: "8px",
-            zIndex: 5,
+            left: "2%",
+            backgroundColor: "rgba(31, 41, 55, 0.6)", // <- updated transparency
+            border: "2px solid rgba(55, 65, 81, 0.7)", // <- softened border
+            borderRadius: "12px",
+            padding: "12px",
+            maxWidth: "120px",
+            maxHeight: "300px",
+            overflowY: "auto",
+            boxShadow: "0 8px 25px rgba(0, 0, 0, 0.4)",
+            color: "#ffffff",
+            fontFamily:
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontSize: "10px",
+            zIndex: 1000,
           }}
         >
-          {gameTimeString}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: "12px",
+              paddingBottom: "8px",
+              borderBottom: "1px solid #4b5563",
+            }}
+          >
+            <span style={{ fontSize: "8px", marginRight: "8px" }}>🏆</span>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "16px",
+                fontWeight: "600",
+                color: "#f3f4f6",
+              }}
+            >
+              Leaderboard
+            </h3>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {sortedPlayers.length > 0 ? (
+              sortedPlayers.slice(0, 3).map((player, index) => (
+                <div
+                  key={player.username}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "8px 12px",
+                    backgroundColor:
+                      index === 0
+                        ? "#fbbf24"
+                        : index === 1
+                        ? "#c0c0c0"
+                        : index === 2
+                        ? "#cd7f32"
+                        : "#374151",
+                    color: index < 3 ? "#000000" : "#ffffff",
+                    borderRadius: "8px",
+                    fontWeight: index < 3 ? "600" : "400",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        minWidth: "20px",
+                      }}
+                    >
+                      #{index + 1}
+                    </span>
+                    <span style={{ fontWeight: "500" }}>{player.username}</span>
+                  </div>
+                  <span
+                    style={{
+                      fontWeight: "600",
+                      fontSize: "10px",
+                    }}
+                  >
+                    {player.points}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#9ca3af",
+                  fontStyle: "italic",
+                  padding: "16px",
+                }}
+              >
+                No players yet
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
