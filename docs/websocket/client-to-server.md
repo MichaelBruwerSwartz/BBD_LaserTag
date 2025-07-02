@@ -2,13 +2,32 @@
 
 ## Connecting
 
-**For players:** Client must connect to `ws://localhost:4000/session/<session_id>?codeId=<player_code_id>&username=<player_username>`
+### For Players
+
+Client must connect to `ws://localhost:4000/session/<session_id>?codeId=<player_code_id>&username=<player_username>`.
 
 Where:
 - **username** is required and
 - **player_code_id** is optional
 
-**For spectators:** Client must connect to `ws://localhost:4000/session/<session_id>/spectator`
+### For Spectators
+
+Client must connect to `ws://localhost:4000/session/<session_id>/spectator`.
+
+### For Color Checking
+
+*Used to check if a color is available.*
+
+Client must connect to `ws://localhost:4000/session/<session_id>/check_color?color=<color_to_check>`
+
+After connecting, the server will reply with
+
+```json
+{
+    "type": "colorResult",
+    "available": true // or false
+}
+```
 
 ## Sending Data
 
