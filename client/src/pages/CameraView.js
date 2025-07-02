@@ -509,128 +509,134 @@ export default function CameraView() {
           <button onClick={() => selectGun("shotgun")}>💥 Shotgun</button>
           <button onClick={() => selectGun("sniper")}>🎯 Sniper</button>
         </div>
+        <div style={{ display: "flex" }}>
+          <div
+            style={{
+              position: "absolute",
+              top: "2%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "white",
+              fontSize: "24px",
+              fontWeight: "bold",
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              padding: "6px 12px",
+              borderRadius: "8px",
+              zIndex: 5,
+            }}
+          >
+            {gameTimeString}
+          </div>
+        </div>
+
+        {/* leaderboard */}
         <div
           style={{
             position: "absolute",
-            top: "2%",
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "white",
-            fontSize: "24px",
-            fontWeight: "bold",
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            padding: "6px 12px",
-            borderRadius: "8px",
-            zIndex: 5,
+            top: "10px",
+            left: "10px",
+            backgroundColor: "rgba(31, 41, 55, 0.6)", // <- updated transparency
+            border: "2px solid rgba(55, 65, 81, 0.7)", // <- softened border
+            borderRadius: "12px",
+            padding: "12px",
+            maxWidth: "120px",
+            maxHeight: "300px",
+            overflowY: "auto",
+            boxShadow: "0 8px 25px rgba(0, 0, 0, 0.4)",
+            color: "#ffffff",
+            fontFamily:
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontSize: "10px",
+            zIndex: 1000,
           }}
         >
-          {gameTimeString}
-        </div>
-      </div>
-
-      {/* leaderboard */}
-      <div
-        style={{
-          position: "absolute",
-          top: "20px",
-          left: "20px",
-          backgroundColor: "#1f2937",
-          border: "2px solid #374151",
-          borderRadius: "12px",
-          padding: "16px",
-          minWidth: "200px",
-          maxHeight: "300px",
-          overflowY: "auto",
-          boxShadow: "0 8px 25px rgba(0, 0, 0, 0.4)",
-          color: "#ffffff",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          fontSize: "14px",
-          zIndex: 1000,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: "12px",
-            paddingBottom: "8px",
-            borderBottom: "1px solid #4b5563",
-          }}
-        >
-          <span style={{ fontSize: "8px", marginRight: "8px" }}>🏆</span>
-          <h3
+          <div
             style={{
-              margin: 0,
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#f3f4f6",
+              display: "flex",
+              alignItems: "center",
+              marginBottom: "12px",
+              paddingBottom: "8px",
+              borderBottom: "1px solid #4b5563",
             }}
           >
-            Leaderboard
-          </h3>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {sortedPlayers.length > 0 ? (
-            sortedPlayers.map((player, index) => (
-              <div
-                key={player.username}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "8px 12px",
-                  backgroundColor:
-                    index === 0
-                      ? "#fbbf24"
-                      : index === 1
-                      ? "#c0c0c0"
-                      : index === 2
-                      ? "#cd7f32"
-                      : "#374151",
-                  color: index < 3 ? "#000000" : "#ffffff",
-                  borderRadius: "8px",
-                  fontWeight: index < 3 ? "600" : "400",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "700",
-                      minWidth: "20px",
-                    }}
-                  >
-                    #{index + 1}
-                  </span>
-                  <span style={{ fontWeight: "500" }}>{player.username}</span>
-                </div>
-                <span
-                  style={{
-                    fontWeight: "600",
-                    fontSize: "14px",
-                  }}
-                >
-                  {player.points}
-                </span>
-              </div>
-            ))
-          ) : (
-            <div
+            <span style={{ fontSize: "8px", marginRight: "8px" }}>🏆</span>
+            <h3
               style={{
-                textAlign: "center",
-                color: "#9ca3af",
-                fontStyle: "italic",
-                padding: "16px",
+                margin: 0,
+                fontSize: "16px",
+                fontWeight: "600",
+                color: "#f3f4f6",
               }}
             >
-              No players yet
-            </div>
-          )}
+              Leaderboard
+            </h3>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {sortedPlayers.length > 0 ? (
+              sortedPlayers.map((player, index) => (
+                <div
+                  key={player.username}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "8px 12px",
+                    backgroundColor:
+                      index === 0
+                        ? "#fbbf24"
+                        : index === 1
+                        ? "#c0c0c0"
+                        : index === 2
+                        ? "#cd7f32"
+                        : "#374151",
+                    color: index < 3 ? "#000000" : "#ffffff",
+                    borderRadius: "8px",
+                    fontWeight: index < 3 ? "600" : "400",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        minWidth: "20px",
+                      }}
+                    >
+                      #{index + 1}
+                    </span>
+                    <span style={{ fontWeight: "500" }}>{player.username}</span>
+                  </div>
+                  <span
+                    style={{
+                      fontWeight: "600",
+                      fontSize: "10px",
+                    }}
+                  >
+                    {player.points}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#9ca3af",
+                  fontStyle: "italic",
+                  padding: "16px",
+                }}
+              >
+                No players yet
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
