@@ -18,6 +18,8 @@ export default function Calibration() {
   const { gameCode } = location.state || {};
 
   useEffect(() => {
+    let detectorInstance;
+
     async function init() {
       await tf.ready();
 
@@ -28,24 +30,28 @@ export default function Calibration() {
 
       const video = videoRef.current;
       video.srcObject = stream;
+
       await video.play();
 
       const canvas = canvasRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      const loadedDetector = await poseDetection.createDetector(
+      detectorInstance = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
-        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+        {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+        }
       );
-      setDetector(loadedDetector);
-      renderLoop(loadedDetector);
+
+      setDetector(detectorInstance);
+      renderLoop(detectorInstance); // ✅ start scanning loop after everything is ready
     }
 
     init();
 
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}/check_color?color=${capturedColor}`
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}/calibration`
     );
     socketRef.current = socket;
 
@@ -54,19 +60,23 @@ export default function Calibration() {
     };
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log("📨 Calibration socket received:", data);
 
-      if (data.available) {
-        navigate("/player_lobby", {
-          state: {
-            color: capturedColor,
-            username,
-            gameCode,
-          },
-        });
-      } else {
-        alert("Colour already in use");
-        // Stay on the page
+        if (data.available) {
+          navigate("/player_lobby", {
+            state: {
+              color: capturedColor,
+              username,
+              gameCode,
+            },
+          });
+        } else {
+          alert("Colour already in use");
+        }
+      } catch (e) {
+        console.error("Invalid message from server:", event.data);
       }
     };
 
@@ -78,8 +88,11 @@ export default function Calibration() {
       console.log("🔌 Calibration WebSocket closed.");
     };
 
-    return () => socket.close();
-  }, [gameCode, capturedColor, username, navigate]);
+    return () => {
+      socket.close();
+      if (detectorInstance?.dispose) detectorInstance.dispose();
+    };
+  }, [gameCode, navigate]);
 
   function getKeypoint(keypoints, name) {
     return keypoints.find((k) => k.name === name || k.part === name);
