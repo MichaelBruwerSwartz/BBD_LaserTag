@@ -555,8 +555,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                  ? "/sniper.png"
-                  : "/pistol.png"
+                    ? "/sniper.png"
+                    : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
@@ -666,7 +666,7 @@ export default function CameraView() {
               }}
             >
               <div>
-                {username} - Rank: {i + 1}, Points: {points}
+                #{i + 1} {username} - {points}
               </div>
             </div>
           ))}
