@@ -74,6 +74,10 @@ export default function PlayerLobby() {
     }
   };
 
+  const goBackToHome = () => {
+    navigate("/");
+  };
+
   return (
     <div
       style={{
@@ -205,6 +209,24 @@ export default function PlayerLobby() {
           Start Game
         </button>
       )}
+      <button
+        style={{
+          marginTop: "1.5rem",
+          padding: "0.75rem 1.5rem",
+          fontSize: "1rem",
+          borderRadius: "5px",
+          backgroundColor: "#800080",
+          border: "none",
+          cursor: "pointer",
+          color: "#FFFFFF",
+          fontWeight: "bold",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
+          position: "relative",
+        }}
+        onClick={goBackToHome}
+      >
+        Back to Home
+      </button>
       <style>
         {`
           @keyframes float {
