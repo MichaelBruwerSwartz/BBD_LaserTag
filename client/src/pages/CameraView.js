@@ -27,7 +27,7 @@ export default function CameraView() {
 
   // Extract URL state params
   const location = useLocation();
-  const { username, gameCode, codeId } = location.state || {};
+  const { username, gameCode, color } = location.state || {};
 
   // Leaderboard state
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -38,7 +38,8 @@ export default function CameraView() {
 
   // Connect to WebSocket & listen for game updates
   useEffect(() => {
-    if (!username || !gameCode || !codeId) {
+    console.log(username, gameCode, color)
+    if (username == null || gameCode == null || color == null) {
       console.warn("Missing username, gameCode or codeId");
       return;
     }
@@ -74,23 +75,23 @@ export default function CameraView() {
       // Set backend first (optional, but recommended)
       await tf.setBackend('webgl');
       await tf.ready();
-  
+
       const detector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
         {
           modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
         }
       );
-  
+
       detectorRef.current = detector;
     }
     loadDetector();
   }, []);
-  
+
 
   useEffect(() => {
     let animationFrameId;
-  
+
     async function detect() {
       if (
         videoRef.current &&
@@ -105,13 +106,13 @@ export default function CameraView() {
       }
       animationFrameId = requestAnimationFrame(detect);
     }
-  
+
     detect();
-  
+
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);  
+  }, []);
 
   // Map RGB to closest CSS color name (used for hit color detection)
   function getClosestColorName(rgbString) {
@@ -174,39 +175,39 @@ export default function CameraView() {
     const width = video.videoWidth;
     const height = video.videoHeight;
     if (!width || !height) return;
-  
+
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
-  
+
     // Draw current video frame
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(video, 0, 0, width, height);
-  
+
     if (!detector) return;
-  
+
     // Estimate pose(s)
     const poses = await detector.estimatePoses(video);
     if (poses.length === 0) return;
-  
+
     const keypoints = poses[0].keypoints;
-  
+
     // Helper to get a keypoint by name
     function getKeypoint(name) {
       return keypoints.find((k) => k.name === name || k.part === name);
     }
-  
+
     // Get shoulder and hip points
     const ls = getKeypoint("left_shoulder");
     const rs = getKeypoint("right_shoulder");
     const lh = getKeypoint("left_hip");
     const rh = getKeypoint("right_hip");
-  
+
     if (!ls || !rs || !lh || !rh) return;
-  
+
     // Draw torso polygon connecting these four points
     const points = [ls, rs, rh, lh];
-  
+
     // Draw filled torso polygon with translucent fill color
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
@@ -214,7 +215,7 @@ export default function CameraView() {
       ctx.lineTo(points[i].x, points[i].y);
     }
     ctx.closePath();
-  
+
     // Sample the mode color inside the rectangle formed by shoulders
     function getModeColorFromPoints(p1, p2) {
       const minX = Math.floor(Math.min(p1.x, p2.x));
@@ -222,10 +223,10 @@ export default function CameraView() {
       const width = Math.floor(Math.abs(p1.x - p2.x));
       const height = Math.floor(Math.abs(p1.y - p2.y));
       if (width < 1 || height < 1) return "aqua";
-  
+
       const imgData = ctx.getImageData(minX, minY, width, height);
       const colorCount = new Map();
-  
+
       for (let i = 0; i < imgData.data.length; i += 4) {
         const r = imgData.data[i];
         const g = imgData.data[i + 1];
@@ -233,7 +234,7 @@ export default function CameraView() {
         const key = `${r},${g},${b}`;
         colorCount.set(key, (colorCount.get(key) || 0) + 1);
       }
-  
+
       let modeColor = "aqua";
       let maxCount = 0;
       for (const [key, count] of colorCount.entries()) {
@@ -244,17 +245,17 @@ export default function CameraView() {
       }
       return modeColor;
     }
-  
+
     const modeColor = getModeColorFromPoints(ls, rs);
     const rgbaColor = modeColor.replace("rgb(", "rgba(").replace(")", ", 0.3)");
-  
+
     ctx.fillStyle = rgbaColor;
     ctx.fill();
-  
+
     ctx.strokeStyle = modeColor;
     ctx.lineWidth = 3;
     ctx.stroke();
-  
+
     // Draw keypoints as small circles (only if score > 0.5)
     keypoints.forEach((kp) => {
       if (kp.score > 0.5) {
@@ -264,7 +265,7 @@ export default function CameraView() {
         ctx.fill();
       }
     });
-  
+
     // Draw a permanent red dot in center of canvas (reticle)
     const centerX = width / 2;
     const centerY = height / 2;
@@ -272,7 +273,7 @@ export default function CameraView() {
     ctx.arc(centerX, centerY, 7, 0, 2 * Math.PI);
     ctx.fillStyle = "red";
     ctx.fill();
-  
+
     // Check if person is standing roughly centered:
     // We consider centered if centerX,centerY lies inside torso polygon (simple point-in-polygon)
     function pointInPolygon(point, vs) {
@@ -284,7 +285,7 @@ export default function CameraView() {
           yi = vs[i].y;
         let xj = vs[j].x,
           yj = vs[j].y;
-  
+
         let intersect =
           yi > y !== yj > y &&
           x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
@@ -292,14 +293,14 @@ export default function CameraView() {
       }
       return inside;
     }
-  
+
     const isCentered = pointInPolygon([centerX, centerY], points);
-  
+
     // Attach to canvas for external use (e.g., button click)
     canvas.isPersonCentered = isCentered;
     canvas.modeColor = modeColor;
   }
-  
+
 
   // Shoot button handler
   const handleShoot = () => {
@@ -523,8 +524,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                  ? "/sniper.png"
-                  : "/pistol.png"
+                    ? "/sniper.png"
+                    : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}

@@ -21,7 +21,7 @@ export default function PlayerLobby() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!gameCode || !username || color) return;
+    if (gameCode == null || username == null || color == null) return;
     if (socketRef.current) return;
 
     const socket = new WebSocket(
