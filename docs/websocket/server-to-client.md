@@ -24,7 +24,10 @@ Sent to **players and spectators** every second and contains all game informatio
 
 - `players` - players and their information
   - key: player username
-  - value: player points
+  - value: object
+    - hitsGiven
+    - hitsReceived
+    - points
 - `timeLeft` - time that remains in seconds
 
 ### `hit`
