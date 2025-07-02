@@ -5,7 +5,8 @@ export default function SpectatorStreaming() {
   const [frameMap, setFrameMap] = useState(new Map());
   const [usernames, setUsernames] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [playerStats, setPlayerStats] = useState([]);
+  const [playerStats, setPlayerStats] = useState([]); // 👈 NEW
+
   const socketRef = useRef(null);
 
   const location = useLocation();
@@ -27,6 +28,7 @@ export default function SpectatorStreaming() {
         const data = JSON.parse(event.data);
         console.log("📦 Raw WebSocket message received:", data);
 
+        // ✅ Handle camera frames
         if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
           const currentUsername = usernames[currentIndex];
           const frameForCurrentUser = data.frames.find(
@@ -49,6 +51,7 @@ export default function SpectatorStreaming() {
             incomingUsernames.length !== usernames.length ||
             !incomingUsernames.every((name, i) => name === usernames[i])
           ) {
+            console.log("🔄 Updating usernames:", incomingUsernames);
             setUsernames(incomingUsernames);
 
             if (!incomingUsernames.includes(currentUsername)) {
@@ -56,7 +59,10 @@ export default function SpectatorStreaming() {
             }
           }
         }
+
+        // ✅ Handle gameUpdate
         if (data.type === "gameUpdate" && Array.isArray(data.players)) {
+          console.log("🧠 Updating player stats:", data.players);
           setPlayerStats(data.players);
         }
       } catch (err) {
@@ -88,6 +94,9 @@ export default function SpectatorStreaming() {
   const currentUsername = usernames[currentIndex];
   const currentFrame = frameMap.get(currentUsername);
   const currentStats = playerStats.find((p) => p.username === currentUsername);
+
+  console.log("👁️ Current username:", currentUsername);
+  console.log("🎯 Current stats:", currentStats);
 
   return (
     <div
@@ -124,6 +133,7 @@ export default function SpectatorStreaming() {
           }}
         />
       )}
+
       {currentStats && (
         <div
           style={{ marginTop: "20px", fontSize: "18px", textAlign: "center" }}
