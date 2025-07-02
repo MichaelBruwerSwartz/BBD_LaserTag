@@ -177,7 +177,7 @@ export default function CameraView() {
     };
     socketRef.current.send(JSON.stringify(hitPayload));
     if (logRef.current) {
-      logRef.current.textContent = `Hit sent: ${targetColor} ${msg} with ${gunType}`;
+      //logRef.current.textContent = `Hit sent: ${targetColor} ${msg} with ${gunType}`;
     }
   }
 
