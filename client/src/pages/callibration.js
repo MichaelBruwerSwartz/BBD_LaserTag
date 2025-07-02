@@ -135,9 +135,11 @@ export default function Calibration() {
     const ctx = canvas.getContext("2d");
     const video = videoRef.current;
 
-    const draw = async () => {
+    async function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      await tf.engine().startScope();
 
       const poses = await detector.estimatePoses(video);
       if (poses.length > 0) {
@@ -147,8 +149,9 @@ export default function Calibration() {
         setCapturedPose(keypoints);
       }
 
+      await tf.engine().endScope();
       requestAnimationFrame(draw);
-    };
+    }
 
     draw();
   }
