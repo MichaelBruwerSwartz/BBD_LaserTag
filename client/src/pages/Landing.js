@@ -15,20 +15,10 @@ export default function LandingPage() {
     }
   }, [state]);
 
-  const joinPlayerLobby = () => {
-    navigate("/player_lobby", {
+  const goToCalibration = () => {
+    navigate("/calibration", {
       state: {
         gameCode,
-        username,
-      },
-    });
-  };
-
-  const joinSpectatorLobby = () => {
-    navigate("/spectator_lobby", {
-      state: {
-        gameCode,
-        username,
       },
     });
   };
@@ -159,7 +149,7 @@ export default function LandingPage() {
 
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
           <button
-            onClick={() => joinPlayerLobby()}
+            onClick={() => goToCalibration()}
             style={{
               padding: "0.75rem 1.5rem",
               fontSize: "1rem",
@@ -177,24 +167,6 @@ export default function LandingPage() {
           </button>
 
           <button
-            onClick={() => joinSpectatorLobby()}
-            style={{
-              padding: "0.75rem 1.5rem",
-              fontSize: "1rem",
-              borderRadius: "5px",
-              backgroundColor: "#888",
-              border: "none",
-              cursor: "pointer",
-              color: "#fff",
-              transition: "background-color 0.3s",
-            }}
-            onMouseOver={(e) => (e.target.style.backgroundColor = "#666")}
-            onMouseOut={(e) => (e.target.style.backgroundColor = "#888")}
-          >
-            Join as Spectator
-          </button>
-
-          <button
             onClick={() => joinSpectatorStreaming()}
             style={{
               padding: "0.75rem 1.5rem",
@@ -209,7 +181,7 @@ export default function LandingPage() {
             onMouseOver={(e) => (e.target.style.backgroundColor = "#666")}
             onMouseOut={(e) => (e.target.style.backgroundColor = "#888")}
           >
-            Join spectator streaming
+            Join as spectator
           </button>
         </div>
       </div>

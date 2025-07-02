@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import * as tf from "@tensorflow/tfjs";
+import * as poseDetection from "@tensorflow-models/pose-detection";
+import "@mediapipe/pose";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Calibration() {
   const videoRef = useRef(null);
@@ -9,6 +13,12 @@ export default function Calibration() {
   const [capturedImageDataUrl, setCapturedImageDataUrl] = useState(null);
   const [name, setName] = useState("");
   const [entries, setEntries] = useState([]);
+
+  const [username, setUsername] = useState("");
+  const navigate = useNavigate();
+
+  const location = useLocation();
+  const { gameCode } = location.state || {};
 
   useEffect(() => {
     async function init() {
@@ -202,7 +212,13 @@ export default function Calibration() {
 
   return (
     <div>
-      <video ref={videoRef} style={{ display: "none" }} playsInline muted autoPlay></video>
+      <video
+        ref={videoRef}
+        style={{ display: "none" }}
+        playsInline
+        muted
+        autoPlay
+      ></video>
       <canvas ref={canvasRef}></canvas>
 
       <div style={{ marginTop: "1rem" }}>
@@ -236,6 +252,24 @@ export default function Calibration() {
           </div>
         ))}
       </div>
+      <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>Enter Username:</h1>
+      <input
+        type="text"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="Username"
+        style={{
+          padding: "0.5rem 1rem",
+          fontSize: "1rem",
+          borderRadius: "5px",
+          border: "none",
+          marginBottom: "0.75rem",
+          textAlign: "center",
+          backgroundColor: "#333",
+          color: "#fff",
+          outline: "none",
+        }}
+      />
     </div>
   );
 }
