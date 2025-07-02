@@ -2,11 +2,11 @@
 
 ## Connecting
 
-**For players:** Client must connect to `ws://localhost:4000/session/<session_id>?color=<player_color>&username=<player_username>`
+**For players:** Client must connect to `ws://localhost:4000/session/<session_id>?codeId=<player_code_id>&username=<player_username>`
 
 Where:
 - **username** is required and
-- **color** is optional
+- **player_code_id** is optional
 
 **For spectators:** Client must connect to `ws://localhost:4000/session/<session_id>/spectator`
 
@@ -24,11 +24,10 @@ Types:
 
 ### `hit`
 
-Sent when a player hits another player.
+Sent when a player scans a code.
 
-- `color` - color that was hit
-- `shape` - shape that was hit
-- `weapon` - the weapon that was used to hit the target
+- `codeId` - ID of code that was scanned
+- `weapon` - the weapon was being used when scanning the code
 
 ### `startGame`
 
