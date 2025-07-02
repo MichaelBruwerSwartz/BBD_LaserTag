@@ -25,6 +25,8 @@ Sent to **players and spectators** every second and contains all game informatio
 - `players` - players and their information
   - key: player username
   - value: object
+    - codeId
+    - color
     - hitsGiven
     - hitsReceived
     - points
@@ -49,9 +51,13 @@ Sent to **players and spectators** when a user joins a session.
 Sent to **players and spectators** when the player list changes.
 
 - `admin` - username of the admin user
-- `playerList` - object with player information
-  - key: player username
-  - value: player color
+- `playerList` - array of player objects
+  - username
+  - codeId
+  - color
+  - hitsGiven
+  - hitsReceived
+  - points
 
 ### `playerQuit`
 
@@ -67,6 +73,10 @@ Sent to **spectators** when a session is closed.
 
 Sent to **players and spectators** (including the session admin) after an admin starts a game.
 
-- `playerList` - object with player information
-  - key: player username
-  - value: player color
+- `playerList` - array of player objects
+  - username
+  - codeId
+  - color
+  - hitsGiven
+  - hitsReceived
+  - points

@@ -22,10 +22,7 @@ export default function PlayerLobby() {
 
   useEffect(() => {
     if (!gameCode || !username) return;
-
     if (socketRef.current) return;
-    console.log(gameCode);
-    console.log(username);
 
     const socket = new WebSocket(
       `ws://localhost:4000/session/${gameCode}?username=${username}` // wss://bbd-lasertag.onrender.com
@@ -50,7 +47,7 @@ export default function PlayerLobby() {
           state: {
             username,
             gameCode,
-            color: currentPlayer?.codeId,
+            codeId: currentPlayer?.codeId
           },
         });
       }
