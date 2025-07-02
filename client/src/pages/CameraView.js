@@ -1,6 +1,6 @@
 /* global cv */
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function CameraView() {
   const videoRef = useRef(null);
@@ -8,6 +8,8 @@ export default function CameraView() {
   const logRef = useRef(null);
   const [gunType, setGunType] = useState("pistol");
   const [zoomEnabled, setZoomEnabled] = useState(false);
+
+  const navigate = useNavigate();
 
   // Game Details
   /*
@@ -31,20 +33,18 @@ export default function CameraView() {
   const { username, gameCode, codeId } = location.state || {};
 
   // leaderboard logic
-  const [leaderboardData, setLeaderboardData] = useState({});
-  const sortedPlayers = Object.entries(leaderboardData || {})
-    .map(([username, points]) => ({ username, points }))
-    .sort((a, b) => b.points - a.points);
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const sortedPlayers = [...leaderboardData].sort((a, b) => b.points - a.points);
 
   const socketRef = useRef(null);
   useEffect(() => {
-    if (!username || !gameCode || !codeId) {
+    if (username == null || gameCode == null || codeId == null) {
       console.warn("Missing required values to connect WebSocket.");
       return;
     }
 
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&codeId=${codeId}`
+      `ws://localhost:4000/session/${gameCode}?username=${username}&codeId=${codeId}` // wss://bbd-lasertag.onrender.com
     );
 
     socketRef.current = socket;
@@ -59,12 +59,26 @@ export default function CameraView() {
 
       // Add logic here for in-game updates
       if (data.type === "gameUpdate") {
-        const mins = Math.floor(data.timeLeft / 60);
-        const secs = data.timeLeft % 60;
+        const { players, timeLeft } = data;
+
+        // countdown
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
         setGameTimeString(
           `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
         );
+
+        // leaderboard
         setLeaderboardData(data.players);
+
+        // check if game has ended -> forward to leaderboard
+        if (timeLeft === 0) {
+          navigate("/leaderboard", {
+            state: {
+              players
+            }
+          });
+        }
       }
     };
 
@@ -570,8 +584,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                  ? "/sniper.png"
-                  : "/pistol.png"
+                    ? "/sniper.png"
+                    : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
@@ -710,10 +724,10 @@ export default function CameraView() {
                       index === 0
                         ? "#fbbf24"
                         : index === 1
-                        ? "#c0c0c0"
-                        : index === 2
-                        ? "#cd7f32"
-                        : "#374151",
+                          ? "#c0c0c0"
+                          : index === 2
+                            ? "#cd7f32"
+                            : "#374151",
                     color: index < 3 ? "#000000" : "#ffffff",
                     borderRadius: "8px",
                     fontWeight: index < 3 ? "600" : "400",
