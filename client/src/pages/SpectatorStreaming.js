@@ -23,17 +23,16 @@ export default function SpectatorStreaming() {
       const data = JSON.parse(event.data);
 
       console.log("Received data:", data);
-      console.log("Frames array:", data.frames);
 
-      if (Array.isArray(data.frames)) {
+      if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
+        console.log("Frames array:", data.frames);
+
         data.frames.forEach((frameObj, index) => {
           console.log(
             `Frame ${index}: username = ${frameObj.username}, frame = [truncated]`
           );
         });
-      }
 
-      if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
         setFrames(data.frames); // update the full frame list
       }
     };
