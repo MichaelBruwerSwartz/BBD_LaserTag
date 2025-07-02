@@ -93,22 +93,25 @@ export default function CameraView() {
     let animationFrameId;
 
     async function detect() {
-      if (videoRef.current && canvasRef.current && detectorRef.current) {
-        await processVideoOnce(
-          videoRef.current,
-          canvasRef.current,
-          detectorRef.current
-        );
+      try {
+        if (videoRef.current && canvasRef.current && detectorRef.current) {
+          await processVideoOnce(
+            videoRef.current,
+            canvasRef.current,
+            detectorRef.current
+          );
+        }
+      } catch (err) {
+        console.error("Detect loop error:", err);
       }
       animationFrameId = requestAnimationFrame(detect);
     }
 
     detect();
-    /*
+
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-*/
   }, []);
 
   // Map RGB to closest CSS color name (used for hit color detection)
@@ -603,44 +606,35 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            top: "10px",
-            left: "10px",
+            top: "10%",
+            right: "10px",
             backgroundColor: "rgba(0,0,0,0.7)",
-            padding: "8px",
-            borderRadius: "6px",
-            maxHeight: "35vh",
+            padding: "10px",
+            borderRadius: "8px",
+            maxHeight: "50vh",
             overflowY: "auto",
-            width: "150px",
+            width: "200px",
             color: "white",
-            fontSize: "12px",
+            fontSize: "14px",
             zIndex: 5,
           }}
         >
-          <h4
-            style={{
-              margin: "0 0 6px 0",
-              textAlign: "center",
-              fontSize: "14px",
-            }}
-          >
+          <h3 style={{ margin: "0 0 10px 0", textAlign: "center" }}>
             Leaderboard
-          </h4>
+          </h3>
           {sortedPlayers.map(({ username, points, kills }, i) => (
             <div
               key={username}
               style={{
                 backgroundColor: i === 0 ? "gold" : i === 1 ? "silver" : "",
                 fontWeight: i === 0 ? "bold" : "normal",
-                marginBottom: "4px",
-                padding: "3px",
-                borderRadius: "3px",
-                fontSize: "11px",
+                marginBottom: "6px",
+                padding: "4px",
+                borderRadius: "4px",
               }}
             >
               <div>
-                {username}
-                <br />
-                Pts: {points} | K: {kills}
+                {username} - Points: {points} Kills: {kills}
               </div>
             </div>
           ))}
