@@ -539,8 +539,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                  ? "/sniper.png"
-                  : "/pistol.png"
+                    ? "/sniper.png"
+                    : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
@@ -622,14 +622,14 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            top: "5%",
+            top: "2%",
             left: "5%",
             backgroundColor: "rgba(0,0,0,0.7)",
             padding: "10px",
             borderRadius: "8px",
             maxHeight: "50vh",
             overflowY: "auto",
-            width: "200px",
+            width: "100px",
             color: "white",
             fontSize: "14px",
             zIndex: 5,
@@ -638,7 +638,7 @@ export default function CameraView() {
           <h3 style={{ margin: "0 0 10px 0", textAlign: "center" }}>
             Leaderboard
           </h3>
-          {sortedPlayers.map(({ username, points, kills }, i) => (
+          {sortedPlayers.map(({ username, points }, i) => (
             <div
               key={username}
               style={{
@@ -650,7 +650,7 @@ export default function CameraView() {
               }}
             >
               <div>
-                {username} - Points: {points} Kills: {kills}
+                #{i + 1} {username} - {points}
               </div>
             </div>
           ))}
