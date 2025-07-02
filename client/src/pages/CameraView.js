@@ -620,7 +620,7 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            bottom: "5%",
+            bottom: "2%",
             left: "50%",
             transform: "translateX(-50%)",
             display: "flex",
@@ -631,8 +631,8 @@ export default function CameraView() {
           <button
             onClick={() => selectGun("pistol")}
             style={{
-              padding: "10px 20px",
-              fontSize: "16px",
+              padding: "5px 10px",
+              fontSize: "14px",
               borderRadius: "8px",
               border: "1px solid #ccc",
               backgroundColor: "#333",
@@ -646,8 +646,8 @@ export default function CameraView() {
           <button
             onClick={() => selectGun("shotgun")}
             style={{
-              padding: "10px 20px",
-              fontSize: "16px",
+              padding: "5px 10px",
+              fontSize: "14px",
               borderRadius: "8px",
               border: "1px solid #ccc",
               backgroundColor: "#333",
@@ -661,8 +661,8 @@ export default function CameraView() {
           <button
             onClick={() => selectGun("sniper")}
             style={{
-              padding: "10px 20px",
-              fontSize: "16px",
+              padding: "5px 10px",
+              fontSize: "14px",
               borderRadius: "8px",
               border: "1px solid #ccc",
               backgroundColor: "#333",
