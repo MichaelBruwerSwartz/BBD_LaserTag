@@ -8,19 +8,16 @@ const SpectatorLobby = () => {
   const socketRef = useRef(null);
 
   const { state } = useLocation();
-  const { gameCode } = state
+  const { gameCode, username } = state || { gameCode: "123", username: "" };
 
-  // List of possible weapons
   const weapons = ["Pistol", "Rifle", "Shotgun", "Sniper", "SMG"];
 
   useEffect(() => {
-    // Use the correct WebSocket URL for spectators with a default gameCode
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}/spectator`
     );
     socketRef.current = socket;
 
-    // Initial dummy data with weapon and boosts
     const dummyPlayerList = [
       { name: "Player1" },
       { name: "Player2" },
@@ -28,7 +25,6 @@ const SpectatorLobby = () => {
     ];
     setPlayers(dummyPlayerList);
 
-    // Simulate initial stats update with weapon and boosts
     setTimeout(() => {
       setPlayers((prevPlayers) =>
         prevPlayers.map((player) => ({
@@ -43,7 +39,6 @@ const SpectatorLobby = () => {
       );
     }, 1000);
 
-    // Refresh data every 5 seconds
     const refreshInterval = setInterval(() => {
       setPlayers((prevPlayers) =>
         prevPlayers.map((player) => {
@@ -56,12 +51,12 @@ const SpectatorLobby = () => {
           const activeBoost = boosts.increaseDamage
             ? "Increase Damage"
             : boosts.unlimitedBullets
-              ? "Unlimited Bullets"
-              : boosts.zoom
-                ? "Zoom"
-                : boosts.grenade > 0
-                  ? `Grenade (${boosts.grenade})`
-                  : "None";
+            ? "Unlimited Bullets"
+            : boosts.zoom
+            ? "Zoom"
+            : boosts.grenade > 0
+            ? `Grenade (${boosts.grenade})`
+            : "None";
           return {
             ...player,
             points: Math.floor(Math.random() * 100),
@@ -71,7 +66,7 @@ const SpectatorLobby = () => {
           };
         })
       );
-      setCurrentTime(new Date()); // Update current time
+      setCurrentTime(new Date());
     }, 5000);
 
     socket.onmessage = (event) => {
@@ -92,12 +87,12 @@ const SpectatorLobby = () => {
             const activeBoost = boosts.increaseDamage
               ? "Increase Damage"
               : boosts.unlimitedBullets
-                ? "Unlimited Bullets"
-                : boosts.zoom
-                  ? "Zoom"
-                  : boosts.grenade > 0
-                    ? `Grenade (${boosts.grenade})`
-                    : "None";
+              ? "Unlimited Bullets"
+              : boosts.zoom
+              ? "Zoom"
+              : boosts.grenade > 0
+              ? `Grenade (${boosts.grenade})`
+              : "None";
             return {
               ...player,
               points: stats.points || 0,
@@ -122,7 +117,6 @@ const SpectatorLobby = () => {
       console.log("Spectator WebSocket disconnected");
     };
 
-    // Update time every second
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
 
     return () => {
@@ -132,7 +126,6 @@ const SpectatorLobby = () => {
     };
   }, [gameCode]);
 
-  // Handle Shuffle button click
   const handleShuffle = () => {
     setPlayers((prevPlayers) =>
       prevPlayers.map((player) => ({
@@ -142,7 +135,6 @@ const SpectatorLobby = () => {
     );
   };
 
-  // Handle Boost button click
   const handleBoost = () => {
     setPlayers((prevPlayers) =>
       prevPlayers.map((player) => {
@@ -160,14 +152,12 @@ const SpectatorLobby = () => {
         ].filter(Boolean).length;
 
         if (activeBoosts === 0) {
-          // Activate a random boost if none are active
           const boostType = ["increaseDamage", "unlimitedBullets", "zoom"][
             Math.floor(Math.random() * 3)
           ];
           boosts[boostType] = true;
           boosts.grenade = Math.floor(Math.random() * 3);
         } else {
-          // Change to a different random boost
           const availableBoosts = [
             "increaseDamage",
             "unlimitedBullets",
@@ -178,10 +168,10 @@ const SpectatorLobby = () => {
               (player.increaseDamage
                 ? "increaseDamage"
                 : player.unlimitedBullets
-                  ? "unlimitedBullets"
-                  : player.zoom
-                    ? "zoom"
-                    : "")
+                ? "unlimitedBullets"
+                : player.zoom
+                ? "zoom"
+                : "")
           );
           const newBoost =
             availableBoosts[Math.floor(Math.random() * availableBoosts.length)];
@@ -192,12 +182,12 @@ const SpectatorLobby = () => {
         const activeBoost = boosts.increaseDamage
           ? "Increase Damage"
           : boosts.unlimitedBullets
-            ? "Unlimited Bullets"
-            : boosts.zoom
-              ? "Zoom"
-              : boosts.grenade > 0
-                ? `Grenade (${boosts.grenade})`
-                : "None";
+          ? "Unlimited Bullets"
+          : boosts.zoom
+          ? "Zoom"
+          : boosts.grenade > 0
+          ? `Grenade (${boosts.grenade})`
+          : "None";
 
         return {
           ...player,
@@ -208,18 +198,49 @@ const SpectatorLobby = () => {
     );
   };
 
+  const handleBackToLanding = () => {
+    window.location.href = "/"; // Replace with your actual landing page route
+  };
+
   return (
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#1a1a1a",
+        height: "100%",
+        width: "100vw",
+        backgroundImage: "url('/images/laser-tag-landing.gif')",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
         color: "#fff",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         fontFamily: "Arial, sans-serif",
+        overflow: "hidden",
       }}
     >
+      {/* Top division with larger logo image */}
+      <div
+        style={{
+          width: "100%",
+          padding: "1rem",
+          backgroundColor: "#4b0082",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <img
+          src="/images/Laser-Tag.png"
+          alt="Game Logo"
+          style={{
+            maxWidth: "300px",
+            maxHeight: "100px",
+            objectFit: "contain",
+          }}
+        />
+      </div>
       <div
         style={{
           width: "100%",
@@ -274,12 +295,14 @@ const SpectatorLobby = () => {
       {activeTab === "Players" ? (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            display: "flex",
+            flexDirection: "column",
             gap: "1rem",
             padding: "1rem",
             width: "100%",
             maxWidth: "64rem",
+            flexGrow: 1,
+            overflowY: "auto",
           }}
         >
           {players.length > 0 ? (
@@ -341,10 +364,54 @@ const SpectatorLobby = () => {
               </div>
             ))
           ) : (
-            <p style={{ textAlign: "center", gridColumn: "1 / -1" }}>
-              No players yet...
-            </p>
+            <p style={{ textAlign: "center" }}>No players yet...</p>
           )}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", marginTop: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
+              <button
+                style={{
+                  backgroundColor: "#800080",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "9999px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={handleShuffle}
+              >
+                Shuffle
+              </button>
+              <button
+                style={{
+                  backgroundColor: "#800080",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "9999px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={handleBoost}
+              >
+                Boost
+              </button>
+            </div>
+            <button
+              style={{
+                backgroundColor: "#800080",
+                color: "#fff",
+                fontWeight: "bold",
+                padding: "0.5rem 1rem",
+                borderRadius: "9999px",
+                border: "none",
+                cursor: "pointer",
+              }}
+              onClick={handleBackToLanding}
+            >
+              Back to Landing
+            </button>
+          </div>
         </div>
       ) : (
         <div
@@ -352,6 +419,8 @@ const SpectatorLobby = () => {
             padding: "1rem",
             width: "100%",
             maxWidth: "64rem",
+            flexGrow: 1,
+            overflowY: "auto",
           }}
         >
           {players.length > 0 ? (
@@ -362,7 +431,6 @@ const SpectatorLobby = () => {
                 gap: "0.5rem",
               }}
             >
-              {/* Header Row */}
               <div
                 style={{
                   display: "grid",
@@ -380,7 +448,6 @@ const SpectatorLobby = () => {
                 <span>Active Boost</span>
                 <span>Weapon</span>
               </div>
-              {/* Data Rows */}
               {players
                 .map((player) => ({
                   ...player,
@@ -410,39 +477,54 @@ const SpectatorLobby = () => {
           ) : (
             <p style={{ textAlign: "center" }}>No leaderboard data yet...</p>
           )}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", marginTop: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
+              <button
+                style={{
+                  backgroundColor: "#800080",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "9999px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={handleShuffle}
+              >
+                Shuffle
+              </button>
+              <button
+                style={{
+                  backgroundColor: "#800080",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "9999px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={handleBoost}
+              >
+                Boost
+              </button>
+            </div>
+            <button
+              style={{
+                backgroundColor: "#800080",
+                color: "#fff",
+                fontWeight: "bold",
+                padding: "0.5rem 1rem",
+                borderRadius: "9999px",
+                border: "none",
+                cursor: "pointer",
+              }}
+              onClick={handleBackToLanding}
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
       )}
-
-      <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-        <button
-          style={{
-            backgroundColor: "#800080",
-            color: "#fff",
-            fontWeight: "bold",
-            padding: "0.5rem 1rem",
-            borderRadius: "9999px",
-            border: "none",
-            cursor: "pointer",
-          }}
-          onClick={handleShuffle}
-        >
-          Shuffle
-        </button>
-        <button
-          style={{
-            backgroundColor: "#800080",
-            color: "#fff",
-            fontWeight: "bold",
-            padding: "0.5rem 1rem",
-            borderRadius: "9999px",
-            border: "none",
-            cursor: "pointer",
-          }}
-          onClick={handleBoost}
-        >
-          Boost
-        </button>
-      </div>
     </div>
   );
 };

@@ -2,13 +2,13 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const colorMap = {
-  red: "red",
-  orange: "orange",
-  yellow: "yellow",
-  green: "green",
-  blue: "blue",
-  pink: "pink",
-  purple: "purple",
+  "red": "#FF8A9A",         // Lighter Laser Cherry
+  "orange": "#FFB74D",      // Softer Amber Neon
+  "yellow": "#FFE082",      // Muted Amber Spark
+  "green": "#C5E1A5",       // Softer Acid Green
+  "blue": "#90CAF9",        // Lighter Laser Azure
+  "pink": "#F8BBD0",        // Softer Bubblegum Light
+  "purple": "#CE93D8"       // Muted Plasma Purple
 };
 
 export default function PlayerLobby() {
@@ -17,12 +17,15 @@ export default function PlayerLobby() {
   const socketRef = useRef(null);
 
   const { state } = useLocation();
-  const { gameCode, username } = state ?? {};
+  const { gameCode, username } = state || {};
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!gameCode || !username) return;
+
     if (socketRef.current) return;
+    console.log(gameCode);
+    console.log(username);
 
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}`
@@ -31,22 +34,25 @@ export default function PlayerLobby() {
 
     console.log("WebSocket initialized", socket);
 
-    let navigatingToSpectator = false;
-
     socket.onmessage = (event) => {
-      if (navigatingToSpectator) return;
-
       const data = JSON.parse(event.data);
       console.log("Message received:", data);
-
       if (data.type === "playerListUpdate") {
         console.log("THIS IS THE PLAYERLIST", data.playerList);
         setPlayers(data.playerList);
         setAdminUsername(data.admin);
+<<<<<<< HEAD
       } else if (data.type === "startGame") {
         const currentPlayer = data.playerList.find(
           (p) => p.username === username
         );
+=======
+      }
+      if (data.type === "startGame") {
+        console.log(data)
+        const currentPlayer = data.playerList.find((p) => p.username === username);
+        console.log("Navigating with player color", currentPlayer?.color);
+>>>>>>> b1f1c415a0ef61315b20d81150c883cb87efcd7d
 
         navigate("/camera_view", {
           state: {
@@ -54,15 +60,6 @@ export default function PlayerLobby() {
             gameCode,
             color: currentPlayer?.codeId,
           },
-        });
-      } else if (data.type === "gameUpdate") {
-        // if this is received, it means the game has started -> navigate to spectator view
-        navigatingToSpectator = true;
-        alert(
-          "The game has already started, you will be taken to the spectator view."
-        );
-        navigate("/spectator_lobby", {
-          state: { gameCode },
         });
       }
     };
@@ -92,173 +89,129 @@ export default function PlayerLobby() {
     <div
       style={{
         padding: "2rem",
-        backgroundColor: "#0f0f0f",
+        backgroundImage: "url('/images/Laser-Tag-Lobby.png')",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
         minHeight: "100vh",
         color: "#ffffff",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily: "Arial, sans-serif",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "1.5rem",
+        position: "relative",
       }}
     >
-      <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-        <h1
+      <div style={{ width: "100%", textAlign: "center", paddingTop: "1rem", paddingBottom: "2rem" }}>
+        <img
+          src="/images/Laser-Tag.png"
+          alt="Logo"
           style={{
-            fontSize: "2rem",
-            margin: "0 0 0.5rem 0",
-            fontWeight: "600",
+            maxWidth: "300px",
+            maxHeight: "120px",
+            objectFit: "contain",
           }}
-        >
-          Game Code: <span style={{ color: "#3b82f6" }}>{gameCode}</span>
-        </h1>
-        <h2
-          style={{
-            fontSize: "1.25rem",
-            margin: "0",
-            fontWeight: "400",
-            color: "#d1d5db",
-          }}
-        >
-          You are:{" "}
-          <span style={{ color: "#3b82f6", fontWeight: "500" }}>
-            {username}
-          </span>
-        </h2>
+        />
       </div>
+      <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>
+        Game Code: <span style={{ color: "#00bfff" }}>{gameCode}</span>
+      </h1>
+      <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>
+        You are: <span style={{ color: "#00bfff" }}>{username}</span>
+      </h1>
 
-      <div style={{ width: "100%", maxWidth: "500px" }}>
-        <h3
+      <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
+        Players in Lobby:
+      </h2>
+
+      {players.length > 0 ? (
+        <ul
           style={{
-            fontSize: "1.25rem",
-            marginBottom: "1rem",
-            textAlign: "center",
-            fontWeight: "500",
-            color: "#f3f4f6",
+            listStyle: "none",
+            padding: 0,
+            width: "100%",
+            maxWidth: "400px",
           }}
         >
-          Players in Lobby
-        </h3>
-
-        {players.length > 0 ? (
-          <ul
-            style={{
-              listStyle: "none",
-              padding: 0,
-              margin: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.75rem",
-            }}
-          >
-            {players.map(({ username: playerName, color }) => (
-              <li
-                key={playerName}
-                style={{
-                  backgroundColor: colorMap[color],
-                  color: "#ffffff",
-                  padding: "1rem 1.25rem",
-                  borderRadius: "12px",
-                  fontWeight: playerName === username ? "600" : "400",
-                  border:
-                    playerName === username
-                      ? "2px solid gray"
-                      : "1px solid #4b5563",
-                  textAlign: "center",
-                  fontSize: "1rem",
-                  boxShadow:
-                    playerName === username
-                      ? "0 0 0 1px rgba(59, 130, 246, 0.3)"
-                      : "none",
-                  transition: "all 0.2s ease",
-                }}
-              >
+          {players.map(({ username: playerName, color }) => (
+            <li
+              key={playerName}
+              style={{
+                background: `linear-gradient(135deg, ${colorMap[color] || "#ddd"} 0%, ${colorMap[color] || "#ddd"} 70%, rgba(255,255,255,0.1) 100%)`,
+                color: "#333",
+                padding: "1rem",
+                marginBottom: "1.5rem",
+                borderRadius: "20px",
+                fontWeight: playerName === username ? "bold" : "normal",
+                border: playerName === username ? "3px solid #000" : "none",
+                textAlign: "center",
+                boxShadow: "0 6px 15px rgba(0, 0, 0, 0.3)",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                position: "relative",
+                overflow: "hidden",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-8px)";
+                e.currentTarget.style.boxShadow = "0 10px 20px rgba(0, 0, 0, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 6px 15px rgba(0, 0, 0, 0.3)";
+              }}
+            >
+              <span style={{ position: "relative", zIndex: 1 }}>
                 {playerName}
                 {playerName === adminUsername && (
-                  <span
+                  <img
+                    src="/images/admin-crown.png"
+                    alt="Admin Icon"
                     style={{
                       marginLeft: "0.5rem",
-                      fontSize: "1.1em",
-                      filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.5))",
+                      verticalAlign: "middle",
+                      width: "30px",
+                      height: "30px",
                     }}
-                  >
-                    👑
-                  </span>
+                  />
                 )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p
-            style={{
-              color: "#9ca3af",
-              textAlign: "center",
-              fontSize: "1rem",
-              fontStyle: "italic",
-            }}
-          >
-            Loading players...
-          </p>
-        )}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          gap: "1rem",
-          marginTop: "1rem",
-        }}
-      >
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p style={{ color: "#888" }}>No players yet...</p>
+      )}
+      {adminUsername === username && (
         <button
-          onClick={() => navigate("/", { state: { username, gameCode } })}
           style={{
+            marginTop: "1.5rem",
             padding: "0.75rem 1.5rem",
-            backgroundColor: "#6b7280",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
             fontSize: "1rem",
-            fontWeight: "500",
-            transition: "all 0.2s ease",
+            borderRadius: "5px",
+            backgroundColor: "#4B004B",
+            border: "none",
+            cursor: "pointer",
+            color: "#FFFFFF",
+            fontWeight: "bold",
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
+            position: "relative",
+            animation: "float 3s ease-in-out infinite",
           }}
-          onMouseOver={(e) => (e.target.style.backgroundColor = "#4b5563")}
-          onMouseOut={(e) => (e.target.style.backgroundColor = "#6b7280")}
+          onClick={() => {
+            handleStartGame();
+          }}
         >
-          Back
+          Start Game
         </button>
-
-        {adminUsername === username && (
-          <button
-            style={{
-              padding: "0.75rem 1.5rem",
-              fontSize: "1rem",
-              fontWeight: "600",
-              borderRadius: "8px",
-              backgroundColor: "#10b981",
-              color: "#ffffff",
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)",
-            }}
-            onMouseOver={(e) => {
-              e.target.style.backgroundColor = "#059669";
-              e.target.style.boxShadow = "0 4px 8px rgba(16, 185, 129, 0.3)";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.backgroundColor = "#10b981";
-              e.target.style.boxShadow = "0 2px 4px rgba(16, 185, 129, 0.2)";
-            }}
-            onClick={() => {
-              handleStartGame();
-            }}
-          >
-            Start Game
-          </button>
-        )}
-      </div>
+      )}
+      <style>
+        {`
+          @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+          }
+        `}
+      </style>
     </div>
   );
 }
