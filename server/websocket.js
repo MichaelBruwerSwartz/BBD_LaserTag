@@ -112,6 +112,7 @@ wss.on("connection", (ws, req) => {
                 }
             }
 
+            console.info(`Checking color availability for ${color}: ${colorAvailable ? 'available' : 'unavailable'}`)
             ws.send({
                 type: 'colorResult',
                 available: colorAvailable
