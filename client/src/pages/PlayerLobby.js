@@ -152,7 +152,7 @@ export default function PlayerLobby() {
                 boxShadow: "0 6px 15px rgba(0, 0, 0, 0.3)",
                 transition: "transform 0.3s ease, box-shadow 0.3s ease",
                 position: "relative",
-                overflow: "hidden",
+                overflow: "visible",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-8px)";
@@ -167,19 +167,23 @@ export default function PlayerLobby() {
             >
               <span style={{ position: "relative", zIndex: 1 }}>
                 {playerName}
-                {playerName === adminUsername && (
-                  <img
-                    src="/images/admin-crown.png"
-                    alt="Admin Icon"
-                    style={{
-                      marginLeft: "0.5rem",
-                      verticalAlign: "middle",
-                      width: "30px",
-                      height: "30px",
-                    }}
-                  />
-                )}
               </span>
+              {playerName === adminUsername && (
+                <img
+                  src="/images/admin-crown(2).png"
+                  alt="Admin Icon"
+                  style={{
+                    position: "absolute",
+                    right: "1rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    verticalAlign: "middle",
+                    width: "30px",
+                    height: "30px",
+                    zIndex: 2,
+                  }}
+                />
+              )}
             </li>
           ))}
         </ul>
