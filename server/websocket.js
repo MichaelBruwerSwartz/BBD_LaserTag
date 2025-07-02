@@ -33,7 +33,7 @@ function getPlayerList(session) {
             color,
             hitsGiven,
             hitsTaken,
-            points: Math.floor(Math.random() * 100)
+            points
         };
     })
 }
@@ -214,7 +214,7 @@ wss.on("connection", (ws, req) => {
                 handleHit(session, session.players[username], color, weapon);
             } else if (type === "startGame") {
                 session.state = "game";
-                session.timeLeft = 60;
+                session.timeLeft = 2 * 60;
                 sendToClients(
                     session,
                     JSON.stringify({
