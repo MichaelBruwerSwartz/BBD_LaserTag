@@ -23,6 +23,14 @@ export default function SpectatorStreaming() {
       const data = JSON.parse(event.data);
 
       console.log("THIS IS THE DATA BEING RECEIVED" + data);
+      console.log("THIS IS THE DATA BEING RECEIVED" + data.frames);
+      console.log(
+        "THIS IS THE DATA BEING RECEIVED within frames" +
+          data.frames.username +
+          " " +
+          data.frames.frame
+      );
+
       if (data.type === "cameraFramesBatch" && Array.isArray(data.frames)) {
         setFrames(data.frames); // replaces the whole frame list each time
       }
