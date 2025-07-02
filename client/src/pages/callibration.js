@@ -11,76 +11,44 @@ export default function Calibration() {
   const [detector, setDetector] = useState(null);
   const [capturedPose, setCapturedPose] = useState(null);
   const [username, setUsername] = useState("");
-  const lastSentColorRef = useRef(null);
-  
-  // Add refs to control the render loop
-  const isRunningRef = useRef(false);
-  const animationFrameRef = useRef(null);
-  const detectorRef = useRef(null);
+  const lastSentColorRef = useRef(null); // ✅ Ref to track last sent color
 
   const navigate = useNavigate();
   const location = useLocation();
   const { gameCode } = location.state || {};
 
   useEffect(() => {
-    let mounted = true;
-    
+    let detectorInstance;
+
     async function init() {
-      try {
-        // Set TensorFlow backend explicitly
-        await tf.ready();
-        
-        if (tf.getBackend() === 'webgpu') {
-          console.log('🔄 WebGPU detected but may be unstable, falling back to WebGL');
-          await tf.setBackend('webgl');
+      await tf.ready();
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      });
+
+      const video = videoRef.current;
+      video.srcObject = stream;
+      await video.play();
+
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      detectorInstance = await poseDetection.createDetector(
+        poseDetection.SupportedModels.MoveNet,
+        {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
         }
-        
-        console.log(`🧠 TensorFlow.js backend: ${tf.getBackend()}`);
+      );
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "user" } },
-          audio: false,
-        });
-
-        if (!mounted) return; // Check if component is still mounted
-
-        const video = videoRef.current;
-        if (!video) return;
-        
-        video.srcObject = stream;
-        await video.play();
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        const detectorInstance = await poseDetection.createDetector(
-          poseDetection.SupportedModels.MoveNet,
-          {
-            modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-          }
-        );
-
-        if (!mounted) {
-          // If component unmounted during init, clean up
-          if (detectorInstance?.dispose) detectorInstance.dispose();
-          return;
-        }
-
-        detectorRef.current = detectorInstance;
-        setDetector(detectorInstance);
-        isRunningRef.current = true;
-        renderLoop(detectorInstance);
-      } catch (error) {
-        console.error('❌ Error initializing camera/detector:', error);
-      }
+      setDetector(detectorInstance);
+      renderLoop(detectorInstance);
     }
 
     init();
 
-    // WebSocket connection
     const socket = new WebSocket(
       `wss://bbd-lasertag.onrender.com/session/${gameCode}/check_color`
     );
@@ -98,7 +66,7 @@ export default function Calibration() {
         if (data.available) {
           navigate("/player_lobby", {
             state: {
-              color: getClosestColorName(lastSentColorRef.current) ?? "unknown",
+              color: getlastSentColorRef.current ?? "unknown",
               username,
               gameCode,
             },
@@ -120,31 +88,10 @@ export default function Calibration() {
     };
 
     return () => {
-      console.log("🧹 Calibration cleanup starting...");
-      mounted = false;
-      isRunningRef.current = false;
-      
-      // Cancel animation frame
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      
-      // Close WebSocket
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.close(1000, "Component unmounting");
-      }
-      
-      // Clean up detector with a small delay to ensure all operations complete
-      setTimeout(() => {
-        if (detectorRef.current?.dispose) {
-          console.log("🧹 Disposing detector...");
-          detectorRef.current.dispose();
-          detectorRef.current = null;
-        }
-      }, 100);
+      socket.close();
+      if (detectorInstance?.dispose) detectorInstance.dispose();
     };
-  }, [gameCode, username, navigate]);
+  }, [gameCode, navigate, username]);
 
   function getKeypoint(keypoints, name) {
     return keypoints.find((k) => k.name === name || k.part === name);
@@ -158,136 +105,77 @@ export default function Calibration() {
 
     if (width < 1 || height < 1) return "aqua";
 
-    try {
-      const imgData = ctx.getImageData(minX, minY, width, height);
-      const colorCount = new Map();
+    const imgData = ctx.getImageData(minX, minY, width, height);
+    const colorCount = new Map();
 
-      for (let i = 0; i < imgData.data.length; i += 4) {
-        const r = imgData.data[i];
-        const g = imgData.data[i + 1];
-        const b = imgData.data[i + 2];
-        const key = `${r},${g},${b}`;
-        colorCount.set(key, (colorCount.get(key) || 0) + 1);
-      }
-
-      let modeColor = "aqua";
-      let maxCount = 0;
-
-      for (const [key, count] of colorCount.entries()) {
-        if (count > maxCount) {
-          maxCount = count;
-          modeColor = `rgb(${key})`;
-        }
-      }
-
-      return modeColor;
-    } catch (error) {
-      console.error("Error getting color from canvas:", error);
-      return "aqua";
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      const r = imgData.data[i];
+      const g = imgData.data[i + 1];
+      const b = imgData.data[i + 2];
+      const key = `${r},${g},${b}`;
+      colorCount.set(key, (colorCount.get(key) || 0) + 1);
     }
+
+    let modeColor = "aqua";
+    let maxCount = 0;
+
+    for (const [key, count] of colorCount.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        modeColor = `rgb(${key})`;
+      }
+    }
+
+    return modeColor;
   }
 
-  function getClosestColorName(rgbString) {
-    if (!rgbString) return "unknown";
-    
-    const cssColors = {
-      red: [255, 0, 0],
-      green: [0, 128, 0],
-      blue: [0, 0, 255],
-      yellow: [255, 255, 0],
-      purple: [128, 0, 128],
-      cyan: [0, 255, 255],
-      orange: [255, 165, 0],
-      pink: [255, 192, 203],
-      lime: [0, 255, 0],
-      navy: [0, 0, 128],
-    };
-    
-    try {
-      const [r, g, b] = rgbString.match(/\d+/g).map(Number);
-      let closestName = "";
-      let minDist = Infinity;
-      
-      for (const [name, [cr, cg, cb]] of Object.entries(cssColors)) {
-        const dist = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
-        if (dist < minDist) {
-          minDist = dist;
-          closestName = name;
+    // Map RGB to closest CSS color name (used for hit color detection)
+    function getClosestColorName(rgbString) {
+        const cssColors = {
+          red: [255, 0, 0],
+          green: [0, 128, 0],
+          blue: [0, 0, 255],
+          yellow: [255, 255, 0],
+          purple: [128, 0, 128],
+          cyan: [0, 255, 255],
+          orange: [255, 165, 0],
+          pink: [255, 192, 203],
+          lime: [0, 255, 0],
+          navy: [0, 0, 128],
+        };
+        const [r, g, b] = rgbString.match(/\d+/g).map(Number);
+        let closestName = "";
+        let minDist = Infinity;
+        for (const [name, [cr, cg, cb]] of Object.entries(cssColors)) {
+          const dist = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
+          if (dist < minDist) {
+            minDist = dist;
+            closestName = name;
+          }
         }
+        return closestName;
       }
-      return closestName;
-    } catch (error) {
-      console.error("Error parsing color:", error);
-      return "unknown";
-    }
-  }
-
   async function renderLoop(detector) {
     const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
     const video = videoRef.current;
-    
-    if (!canvas || !video || !detector) return;
-    
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    let lastPoseDetection = 0;
-    const poseDetectionInterval = 100; // Detect poses every 100ms instead of every frame
 
     async function draw() {
-      // Check if we should continue running
-      if (!isRunningRef.current || !detectorRef.current) {
-        return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      await tf.engine().startScope();
+
+      const poses = await detector.estimatePoses(video);
+      if (poses.length > 0) {
+        const keypoints = poses[0].keypoints;
+        drawTorsoBox(ctx, keypoints);
+        drawKeypoints(ctx, keypoints);
+        setCapturedPose(keypoints);
       }
 
-      try {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const now = Date.now();
-        
-        // Only run pose detection at intervals to reduce tensor pressure
-        if (now - lastPoseDetection > poseDetectionInterval) {
-          const numTensorsBefore = tf.memory().numTensors;
-          
-          // Estimate poses
-          const poses = await detector.estimatePoses(video);
-
-          if (poses.length > 0) {
-            const keypoints = poses[0].keypoints;
-            drawTorsoBox(ctx, keypoints);
-            drawKeypoints(ctx, keypoints);
-            setCapturedPose(keypoints);
-          }
-
-          lastPoseDetection = now;
-          
-          // Monitor tensor usage
-          const numTensorsAfter = tf.memory().numTensors;
-          if (numTensorsAfter > numTensorsBefore + 5) { // Allow some variance
-            console.log(`⚠️ Tensor count increased: ${numTensorsBefore} -> ${numTensorsAfter}`);
-          }
-        } else {
-          // Just redraw the existing pose detection results
-          if (capturedPose) {
-            drawTorsoBox(ctx, capturedPose);
-            drawKeypoints(ctx, capturedPose);
-          }
-        }
-
-        // Schedule next frame only if still running
-        if (isRunningRef.current) {
-          animationFrameRef.current = requestAnimationFrame(draw);
-        }
-      } catch (error) {
-        console.error("Error in render loop:", error);
-        // Continue the loop even if there's an error, but with a delay
-        if (isRunningRef.current) {
-          setTimeout(() => {
-            if (isRunningRef.current) {
-              animationFrameRef.current = requestAnimationFrame(draw);
-            }
-          }, 100);
-        }
-      }
+      await tf.engine().endScope();
+      requestAnimationFrame(draw);
     }
 
     draw();
@@ -334,7 +222,7 @@ export default function Calibration() {
 
   function capturePose() {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const ctx = canvas.getContext("2d");
 
     if (!capturedPose) {
       alert("No pose detected yet. Try again.");
@@ -350,7 +238,7 @@ export default function Calibration() {
     }
 
     const modeColor = getModeColorFromPoints(ctx, ls, rs);
-    lastSentColorRef.current = modeColor;
+    lastSentColorRef.current = modeColor; // ✅ save color in ref
 
     const message = {
       type: "calibration",
@@ -368,42 +256,22 @@ export default function Calibration() {
   }
 
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
+    <div>
       <video
         ref={videoRef}
+        style={{ display: "none" }}
         playsInline
         muted
         autoPlay
-        style={{ display: "none" }}
-      />
-
-      <canvas
-        ref={canvasRef}
-        style={{
-          width: "100vw",
-          height: "100vh",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          zIndex: 1,
-        }}
-      />
+      ></video>
+      <canvas ref={canvasRef}></canvas>
 
       <div
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          zIndex: 2,
           marginTop: "1rem",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "flex-end",
-          paddingBottom: "2rem",
-          pointerEvents: "auto",
         }}
       >
         <input
