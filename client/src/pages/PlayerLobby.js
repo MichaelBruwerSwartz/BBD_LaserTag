@@ -1,6 +1,16 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+const colorMap = {
+  "red": "#FF8A9A",         // Lighter Laser Cherry
+  "orange": "#FFB74D",      // Softer Amber Neon
+  "yellow": "#FFE082",      // Muted Amber Spark
+  "green": "#C5E1A5",       // Softer Acid Green
+  "blue": "#90CAF9",        // Lighter Laser Azure
+  "pink": "#F8BBD0",        // Softer Bubblegum Light
+  "purple": "#CE93D8"       // Muted Plasma Purple
+};
+
 export default function PlayerLobby() {
   const [players, setPlayers] = useState([]);
   const [adminUsername, setAdminUsername] = useState("");
@@ -72,15 +82,30 @@ export default function PlayerLobby() {
     <div
       style={{
         padding: "2rem",
-        backgroundColor: "#121212",
+        backgroundImage: "url('/images/Laser-Tag-Lobby.png')",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
         minHeight: "100vh",
         color: "#ffffff",
         fontFamily: "Arial, sans-serif",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        position: "relative",
       }}
     >
+      <div style={{ width: "100%", textAlign: "center", paddingTop: "1rem", paddingBottom: "2rem" }}>
+        <img
+          src="/images/Laser-Tag.png"
+          alt="Logo"
+          style={{
+            maxWidth: "300px",
+            maxHeight: "120px",
+            objectFit: "contain",
+          }}
+        />
+      </div>
       <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>
         Game Code: <span style={{ color: "#00bfff" }}>{gameCode}</span>
       </h1>
@@ -105,23 +130,43 @@ export default function PlayerLobby() {
             <li
               key={playerName}
               style={{
-                backgroundColor: color || "#ddd",
-                color: "white",
-                padding: "0.75rem 1rem",
-                marginBottom: "0.5rem",
-                borderRadius: "8px",
+                background: `linear-gradient(135deg, ${colorMap[color] || "#ddd"} 0%, ${colorMap[color] || "#ddd"} 70%, rgba(255,255,255,0.1) 100%)`,
+                color: "#333",
+                padding: "1rem",
+                marginBottom: "1.5rem",
+                borderRadius: "20px",
                 fontWeight: playerName === username ? "bold" : "normal",
-                border:
-                  playerName === username ? "2px solid #000" : "1px solid #444",
+                border: playerName === username ? "3px solid #000" : "none",
                 textAlign: "center",
+                boxShadow: "0 6px 15px rgba(0, 0, 0, 0.3)",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                position: "relative",
+                overflow: "hidden",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-8px)";
+                e.currentTarget.style.boxShadow = "0 10px 20px rgba(0, 0, 0, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 6px 15px rgba(0, 0, 0, 0.3)";
               }}
             >
-              {playerName}
-              {playerName === adminUsername && (
-                <span style={{ marginLeft: "0.5rem", fontWeight: "bold" }}>
-                  👑
-                </span>
-              )}
+              <span style={{ position: "relative", zIndex: 1 }}>
+                {playerName}
+                {playerName === adminUsername && (
+                  <img
+                    src="/images/admin-crown.png"
+                    alt="Admin Icon"
+                    style={{
+                      marginLeft: "0.5rem",
+                      verticalAlign: "middle",
+                      width: "30px",
+                      height: "30px",
+                    }}
+                  />
+                )}
+              </span>
             </li>
           ))}
         </ul>
@@ -135,11 +180,14 @@ export default function PlayerLobby() {
             padding: "0.75rem 1.5rem",
             fontSize: "1rem",
             borderRadius: "5px",
-            backgroundColor: "#00ff88",
+            backgroundColor: "#4B004B",
             border: "none",
             cursor: "pointer",
-            color: "#000",
+            color: "#FFFFFF",
             fontWeight: "bold",
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
+            position: "relative",
+            animation: "float 3s ease-in-out infinite",
           }}
           onClick={() => {
             handleStartGame();
@@ -148,6 +196,15 @@ export default function PlayerLobby() {
           Start Game
         </button>
       )}
+      <style>
+        {`
+          @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+          }
+        `}
+      </style>
     </div>
   );
 }
