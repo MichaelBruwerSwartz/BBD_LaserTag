@@ -134,7 +134,7 @@ export default function SpectatorStreaming() {
           style={{
             width: "90%",
             maxWidth: "800px",
-            maxHeight: "70vh",
+            maxHeight: "30vh",
             objectFit: "contain",
             border: "3px solid #fff",
             borderRadius: "12px",
