@@ -373,7 +373,7 @@ export default function CameraView() {
         }
       } catch (err) {
         console.error("Camera error:", err);
-        alert("Camera access denied. Please allow permissions.");
+        alert(`Camera access denied. Please allow permissions.\n\nError: ${err.message}`);
       }
     }
     startCamera();
@@ -523,8 +523,8 @@ export default function CameraView() {
                 gunType === "shotgun"
                   ? "/shotgun.png"
                   : gunType === "sniper"
-                  ? "/sniper.png"
-                  : "/pistol.png"
+                    ? "/sniper.png"
+                    : "/pistol.png"
               }
               alt="Shoot"
               onClick={handleShoot}
