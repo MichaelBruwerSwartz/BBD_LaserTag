@@ -36,7 +36,7 @@ export default function SpectatorStreaming() {
               (f) => f.username === currentUsername
             );
             if (!stillExists) {
-              console.log("ℹ️ Current player left — resetting to first player");
+              console.log(" Current player left — resetting to first player");
               setCurrentIndex(0);
             }
           } else {
@@ -59,7 +59,7 @@ export default function SpectatorStreaming() {
     return () => {
       socket.close();
     };
-  }, [gameCode, frames, currentIndex]);
+  }, []);
 
   const goToNext = () => {
     console.log("➡️ Going to next player");
@@ -114,10 +114,10 @@ export default function SpectatorStreaming() {
       {frames.length > 1 && (
         <div style={{ marginTop: "20px", display: "flex", gap: "40px" }}>
           <button onClick={goToPrev} style={buttonStyle}>
-            ⬅️ Previous
+            Previous Player
           </button>
           <button onClick={goToNext} style={buttonStyle}>
-            Next ➡️
+            Next Player
           </button>
         </div>
       )}
