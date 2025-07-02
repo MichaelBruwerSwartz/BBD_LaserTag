@@ -21,7 +21,7 @@ const exampleSession = {
     cable: {
       connection: null, // websocket connection
       username: "cable",
-      color,
+      color: "user color",
       points: 0,
       hitsGiven: 0,
       hitsReceived: 0,
