@@ -51,7 +51,7 @@ export default function Calibration() {
     init();
 
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}/calibration`
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}/check_color?color=${capturedColor}`
     );
     socketRef.current = socket;
 
@@ -92,7 +92,7 @@ export default function Calibration() {
       socket.close();
       if (detectorInstance?.dispose) detectorInstance.dispose();
     };
-  }, [gameCode, navigate]);
+  }, [gameCode, navigate, capturedColor]);
 
   function getKeypoint(keypoints, name) {
     return keypoints.find((k) => k.name === name || k.part === name);
