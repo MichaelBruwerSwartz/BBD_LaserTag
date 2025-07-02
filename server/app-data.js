@@ -1,6 +1,6 @@
 SESSION_PERSIST_TIME = 10
 
-const colors = ['blue', 'red', 'purple', 'orange'] // available player colors
+const colors = ['blue', 'green', 'yellow'] // available player colors
 const sessions = {}
 // sessions will be automatically removed when all player websocket connections have been closed
 
