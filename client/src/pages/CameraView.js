@@ -40,11 +40,11 @@ export default function CameraView() {
   useEffect(() => {
     console.log(username, gameCode, color)
     if (username == null || gameCode == null || color == null) {
-      console.warn("Missing username, gameCode or codeId");
+      console.warn("Missing username, gameCode or color");
       return;
     }
     const socket = new WebSocket(
-      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&codeId=${codeId}`
+      `wss://bbd-lasertag.onrender.com/session/${gameCode}?username=${username}&color=${color}`
     );
     socketRef.current = socket;
 
@@ -68,7 +68,7 @@ export default function CameraView() {
     socket.onerror = (e) => console.error("WebSocket error", e);
 
     return () => socket.close();
-  }, [username, gameCode, codeId, navigate]);
+  }, []);
 
   useEffect(() => {
     async function loadDetector() {
