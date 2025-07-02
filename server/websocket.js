@@ -91,7 +91,7 @@ setInterval(() => {
                     }
 
                     // give new
-                    if (Math.random() < 0.1) {
+                    if (Math.random() < 0.06) {
                         const selectedPowerup = powerups[Math.floor(Math.random() * powerups.length)]
                         const powerupDuration = 10
                         player.activePowerups[selectedPowerup] = powerupDuration
@@ -238,7 +238,7 @@ wss.on("connection", (ws, req) => {
                 handleHit(session, session.players[username], color, weapon);
             } else if (type === "startGame") {
                 session.state = "game";
-                session.timeLeft = 2 * 60;
+                session.timeLeft = 3 * 60;
                 sendToClients(
                     session,
                     JSON.stringify({
