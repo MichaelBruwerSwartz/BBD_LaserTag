@@ -32,11 +32,11 @@ const exampleSession = {
   },
 };
 
-function createSession(id, adminUsername) {
+function createSession(id) {
   const session = {
     id,
     state: "lobby",
-    admin: adminUsername,
+    admin: null,
     persistTime: SESSION_PERSIST_TIME,
     players: {},
     spectators: {},
