@@ -91,7 +91,7 @@ setInterval(() => {
                     }
 
                     // give new
-                    if (Math.random() < 0.04) {
+                    if (Math.random() < 0.1) {
                         const selectedPowerup = powerups[Math.floor(Math.random() * powerups.length)]
                         const powerupDuration = 10
                         player.activePowerups[selectedPowerup] = powerupDuration
