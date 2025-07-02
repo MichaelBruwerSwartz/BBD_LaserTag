@@ -2,16 +2,16 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const colorMap = {
-  red: "#FF8A9A", // Soft Rose Red
-  green: "#C5E1A5", // Pastel Mint Green
-  blue: "#90CAF9", // Baby Blue
-  yellow: "#FFE082", // Light Buttercup
-  purple: "#CE93D8", // Lavender Mist
-  cyan: "#B2EBF2", // Soft Ice Blue
-  orange: "#FFB74D", // Creamsicle Orange
-  pink: "#F8BBD0", // Bubblegum Light
-  lime: "#DCFF96", // Spring Lime
-  navy: "#80B3FF", // Soft Sky Navy
+  red: "#FF8A9A",    // Lighter Laser Cherry
+  orange: "#FFB74D", // Softer Amber Neon
+  yellow: "#FFE082", // Muted Amber Spark
+  green: "#C5E1A5",  // Softer Acid Green
+  blue: "#90CAF9",   // Lighter Laser Azure
+  pink: "#F8BBD0",   // Softer Bubblegum Light
+  purple: "#CE93D8", // Muted Plasma Purple
+  navy: "#8A9ABF",   // Softened Navy
+  lime: "#D4E0A5",   // Softened Lime
+  cyan: "#A3D9E9",   // Softened Cyan
 };
 
 export default function PlayerLobby() {
@@ -215,11 +215,9 @@ export default function PlayerLobby() {
             <li
               key={playerName}
               style={{
-                background: `linear-gradient(135deg, ${
-                  colorMap[color] || "#ddd"
-                } 0%, ${
-                  colorMap[color] || "#ddd"
-                } 70%, rgba(255,255,255,0.1) 100%)`,
+                background: `linear-gradient(135deg, ${colorMap[color] || "#ddd"
+                  } 0%, ${colorMap[color] || "#ddd"
+                  } 70%, rgba(255,255,255,0.1) 100%)`,
                 color: "#333",
                 padding: "1rem",
                 marginBottom: "1.5rem",
