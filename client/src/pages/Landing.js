@@ -15,7 +15,13 @@ export default function LandingPage() {
     }
   }, [state]);
 
+  const isValidCode = (code) => code.length === 4;
+
   const goToCalibration = () => {
+    if (!isValidCode(gameCode)) {
+      alert("Please enter a valid 4-letter game code.");
+      return;
+    }
     navigate("/calibration", {
       state: {
         gameCode,
@@ -24,6 +30,10 @@ export default function LandingPage() {
   };
 
   const joinSpectatorStreaming = () => {
+    if (!isValidCode(gameCode)) {
+      alert("Please enter a valid 4-letter game code.");
+      return;
+    }
     navigate("/spectator_stream", {
       state: {
         gameCode,
@@ -65,13 +75,13 @@ export default function LandingPage() {
       {/* Logo Section */}
       <div
         style={{
-          height: "25vh", // Reduced to make it more compact
+          height: "25vh",
           width: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
           marginBottom: "0",
-          marginTop: "-20vh", // Increased to move logo higher
+          marginTop: "-20vh",
           zIndex: 1,
         }}
       >
@@ -101,7 +111,7 @@ export default function LandingPage() {
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          marginTop: "0", // Adjusted to balance with new logo position
+          marginTop: "0",
         }}
       >
         <h1 style={{ marginBottom: "0.5rem", color: "#fff" }}>Enter Code:</h1>
@@ -110,7 +120,10 @@ export default function LandingPage() {
           value={gameCode}
           onChange={(e) =>
             setGameCode(
-              e.target.value.replace(/[^a-zA-Z]/g, "").toLocaleLowerCase()
+              e.target.value
+                .replace(/[^a-zA-Z]/g, "")
+                .toLowerCase()
+                .slice(0, 4)
             )
           }
           placeholder="Game Code"
@@ -129,7 +142,7 @@ export default function LandingPage() {
 
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
           <button
-            onClick={() => goToCalibration()}
+            onClick={goToCalibration}
             style={{
               padding: "0.75rem 1.5rem",
               fontSize: "1rem",
@@ -147,7 +160,7 @@ export default function LandingPage() {
           </button>
 
           <button
-            onClick={() => joinSpectatorStreaming()}
+            onClick={joinSpectatorStreaming}
             style={{
               padding: "0.75rem 1.5rem",
               fontSize: "1rem",
@@ -161,7 +174,7 @@ export default function LandingPage() {
             onMouseOver={(e) => (e.target.style.backgroundColor = "#666")}
             onMouseOut={(e) => (e.target.style.backgroundColor = "#888")}
           >
-            Join as spectator
+            Join as Spectator
           </button>
         </div>
       </div>
