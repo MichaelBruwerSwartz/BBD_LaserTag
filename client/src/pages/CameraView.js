@@ -622,8 +622,8 @@ export default function CameraView() {
         <div
           style={{
             position: "absolute",
-            top: "10%",
-            right: "10px",
+            top: "5%",
+            left: "5%",
             backgroundColor: "rgba(0,0,0,0.7)",
             padding: "10px",
             borderRadius: "8px",
