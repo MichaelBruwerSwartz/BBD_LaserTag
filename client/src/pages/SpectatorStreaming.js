@@ -6,6 +6,7 @@ export default function SpectatorStreaming() {
   const [usernames, setUsernames] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [playerStats, setPlayerStats] = useState([]);
+  const [gameTimeString, setGameTimeString] = useState("00:00");
 
   const socketRef = useRef(null);
 
@@ -60,6 +61,12 @@ export default function SpectatorStreaming() {
         if (data.type === "gameUpdate" && Array.isArray(data.players)) {
           console.log("🧠 Updating player stats:", data.players);
           setPlayerStats(data.players);
+          setGameTimeString(
+            `${String(Math.floor(data.timeLeft / 60)).padStart(
+              2,
+              "0"
+            )}:${String(data.timeLeft % 60).padStart(2, "0")}`
+          );
           if (data.timeLeft === 0) {
             navigate("/player_leaderboard", {
               state: { players: data.players },
@@ -124,6 +131,7 @@ export default function SpectatorStreaming() {
           </span>
         )}
       </h2>
+      <h2>{gameTimeString}</h2>
 
       {currentFrame && (
         <div style={{ position: "relative", width: "90%", maxWidth: "800px" }}>
