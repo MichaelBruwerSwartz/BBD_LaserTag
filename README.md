@@ -7,9 +7,9 @@ This system uses pose detection with TensorFlow.js and the MoveNet model to iden
 
 ## How to run locally (with server hosted)
 
-Go in the ./client/ directory
-npm run-start
-Go into the ./ directory
-npx localtunnel --port PORT_NUMBER
+Go in the ./client/ directory \n
+npm run-start \n
+Go into the ./ directory \n
+npx localtunnel --port PORT_NUMBER \n
 
 if you would like to run it fully locally, or the server is not up, change all the render links to rather use localhost:PORT_NUMBER
