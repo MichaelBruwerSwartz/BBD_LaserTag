@@ -60,6 +60,11 @@ export default function SpectatorStreaming() {
         if (data.type === "gameUpdate" && Array.isArray(data.players)) {
           console.log("🧠 Updating player stats:", data.players);
           setPlayerStats(data.players);
+          if (data.timeLeft === 0) {
+            navigate("/player_leaderboard", {
+              state: { players: data.players },
+            });
+          }
         }
       } catch (err) {
         console.error("❌ Failed to parse WebSocket message:", err);
